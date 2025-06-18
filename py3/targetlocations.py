@@ -81,6 +81,71 @@ class H20Image():
         return data[0]
 
 # Example usage
-image_path = "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/org/fieldwork/Valais/img/Fladerich_01/DJI_20250617112457_0001_Z.JPG"
+plot = "Uttigen_01"
+image_path = os.path.join(
+    "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/org/fieldwork/Valais/img",
+    "DJI_20250617112457_0001_Z.JPG"
+)
 image = H20Image(image_path)
 image.target_location
+
+import os, shutil, folium
+dir_src = os.path.join(
+    "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/org/fieldwork/Valais/img",
+    plot
+    )
+dir_dst = os.path.join(
+    "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/org/fieldwork/Valais/img",
+    plot,
+    "Images"
+)
+
+if not os.path.exists(dir_dst):
+    os.makedirs(dir_dst)
+
+if not os.path.exists(os.path.join(dir_dst, "files")):
+    os.makedirs(os.path.join(dir_dst, "files"))
+
+for file in os.listdir(dir_src):
+    if file.endswith(".JPG"):
+        src_file = os.path.join(dir_src, file)
+        dst_file = os.path.join(dir_dst, "files", file)
+        shutil.copy(src_file, dst_file)
+        print(f"Copied {src_file} to {dst_file}")
+
+points = []
+for file in os.listdir(os.path.join(dir_dst, "files")):
+    if file.endswith("_Z.JPG"):
+        image = H20Image(os.path.join(dir_dst, "files", file))
+        location = image.target_location
+        points.append(
+            {
+                "name": file,
+                "lon": location[0],
+                "lat": location[1],
+                "alt": location[2],
+                "ctime": image.ctime.isoformat(),
+                "image": "files/" + file
+            }
+        )
+
+meanlat = np.mean([pt["lat"] for pt in points])
+meanlon = np.mean([pt["lon"] for pt in points])
+
+m = folium.Map(location = [meanlat, meanlon], zoom_start = 50)
+
+for pt in points:
+    html = f"""
+    <b>{pt['name']}</b><br>
+    Elevation: {pt['alt']} m<br>
+    <img src='{pt['image']}' style='width:1024px; height:auto;'/>
+    """
+    folium.Marker(
+        location = [pt["lat"], pt["lon"]],
+        popup = folium.Popup(
+            html
+            ),
+    ).add_to(m)
+
+os.chdir(dir_dst)
+m.save("image_map.html")
