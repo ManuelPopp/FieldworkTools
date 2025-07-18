@@ -2,6 +2,7 @@ import os
 import shutil
 import argparse
 from tqdm import tqdm
+from warnings import warn
 
 def parse_args():
     '''Parse command line arguments.
@@ -19,6 +20,11 @@ def parse_args():
         "-dst", "--dst_dir",
         type = str,
         help = "Output directory."
+        )
+    parser.add_argument(
+        "-o", "--overwrite",
+        action = "store_true",
+        help = "Overwrite existing files."
         )
     
     return parser.parse_args()
@@ -42,24 +48,30 @@ def rename_img(filename):
     
     return out_name
 
-def copy_images(src_dir, dst_dir):
+def copy_images(src_dir, dst_dir, overwrite = False):
     '''Copy images to a new directory and rename them.
 
     Args:
         src_dir (str): Directory containing images to be copied.
         dst_dir (str): Output directory.
+        overwrite (bool): Overwrite existing files with the same name. Default is False.
     '''
     os.makedirs(dst_dir, exist_ok = True)
     image_files = os.listdir(src_dir)
+    
     for filename in tqdm(image_files, desc = "Copying images", unit = "file"):
+        dst_file = rename_img(os.path.join(dst_dir, filename))
         if filename.endswith(".TIF") or filename.endswith(".JPG"):
-            shutil.copy2(
-                os.path.join(src_dir, filename),
-                rename_img(os.path.join(dst_dir, filename))
-                )
+            if os.path.isfile(dst_file):
+                warn(f"File already exists: {dst_file}.")
+                
+                if not overwrite:
+                    continue
+            
+            shutil.copy2(os.path.join(src_dir, filename), dst_file)
     
     return
 
 if __name__ == "__main__":
     args = parse_args()
-    copy_images(args.src_dir, args.dst_dir)
+    copy_images(args.src_dir, args.dst_dir, overwrite = args.overwrite)
