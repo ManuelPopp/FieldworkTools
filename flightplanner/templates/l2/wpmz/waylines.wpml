@@ -6,15 +6,20 @@
       <wpml:finishAction>goHome</wpml:finishAction>
       <wpml:exitOnRCLost>executeLostAction</wpml:exitOnRCLost>
       <wpml:executeRCLostAction>goBack</wpml:executeRCLostAction>
-      <wpml:takeOffSecurityHeight>85</wpml:takeOffSecurityHeight>
-      <wpml:globalTransitionalSpeed>15</wpml:globalTransitionalSpeed>
+      <wpml:takeOffSecurityHeight>{TOSECUREHEIGHT}</wpml:takeOffSecurityHeight>
+      <wpml:globalTransitionalSpeed>{TRANSITIONSPEED}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
-        <wpml:droneEnumValue>77</wpml:droneEnumValue>
+        <wpml:droneEnumValue>103</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
+      <wpml:autoRerouteInfo>
+        <wpml:transitionalAutoRerouteMode>1</wpml:transitionalAutoRerouteMode>
+        <wpml:missionAutoRerouteMode>1</wpml:missionAutoRerouteMode>
+      </wpml:autoRerouteInfo>
+      <wpml:waylineAvoidLimitAreaMode>1</wpml:waylineAvoidLimitAreaMode>
       <wpml:payloadInfo>
-        <wpml:payloadEnumValue>68</wpml:payloadEnumValue>
-        <wpml:payloadSubEnumValue>3</wpml:payloadSubEnumValue>
+        <wpml:payloadEnumValue>84</wpml:payloadEnumValue>
+        <wpml:payloadSubEnumValue>1</wpml:payloadSubEnumValue>
         <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
       </wpml:payloadInfo>
     </wpml:missionConfig>
@@ -45,34 +50,6 @@
         </wpml:action>
         <wpml:action>
           <wpml:actionId>1</wpml:actionId>
-          <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
-          <wpml:actionActuatorFuncParam>
-            <wpml:hoverTime>0.5</wpml:hoverTime>
-          </wpml:actionActuatorFuncParam>
-        </wpml:action>
-        <wpml:action>
-          <wpml:actionId>2</wpml:actionId>
-          <wpml:actionActuatorFunc>setFocusType</wpml:actionActuatorFunc>
-          <wpml:actionActuatorFuncParam>
-            <wpml:cameraFocusType>manual</wpml:cameraFocusType>
-            <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-          </wpml:actionActuatorFuncParam>
-        </wpml:action>
-        <wpml:action>
-          <wpml:actionId>3</wpml:actionId>
-          <wpml:actionActuatorFunc>focus</wpml:actionActuatorFunc>
-          <wpml:actionActuatorFuncParam>
-            <wpml:focusX>0</wpml:focusX>
-            <wpml:focusY>0</wpml:focusY>
-            <wpml:focusRegionWidth>0</wpml:focusRegionWidth>
-            <wpml:focusRegionHeight>0</wpml:focusRegionHeight>
-            <wpml:isPointFocus>0</wpml:isPointFocus>
-            <wpml:isInfiniteFocus>1</wpml:isInfiniteFocus>
-            <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-          </wpml:actionActuatorFuncParam>
-        </wpml:action>
-        <wpml:action>
-          <wpml:actionId>4</wpml:actionId>
           <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
           <wpml:actionActuatorFuncParam>
             <wpml:hoverTime>1</wpml:hoverTime>
