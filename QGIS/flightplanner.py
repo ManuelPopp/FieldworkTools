@@ -4,6 +4,7 @@ from qgis.PyQt.QtCore import QProcess
 from qgis.core import (
     QgsProcessingAlgorithm, QgsProcessingParameterPoint, 
     QgsProcessingParameterString, QgsProcessingParameterNumber,
+    QgsProcessingParameterEnum,
     QgsProcessingParameterFolderDestination, QgsProcessingParameterDefinition,
     QgsCoordinateTransform, QgsCoordinateReferenceSystem
     )
@@ -13,6 +14,7 @@ import subprocess
 script_dir = "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/flightplanner"
 script_name = "create_area_flight.py"
 defaultname = "SamplingPlot"
+sensor_options = ["m3m", "l2"]
 
 # Functions
 def get_unique_filename(folder, base = defaultname, ext = ".kmz"):
@@ -28,6 +30,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
     LATLON = "LATLON"
     OUTPUT = "OUTPUT"
     FILENAME = "FILENAME"
+    SENSOR = "SENSOR"
     
     def initAlgorithm(self, config = None):
         self.addParameter(
@@ -51,11 +54,20 @@ class CreateFlightplan(QgsProcessingAlgorithm):
                 optional = True
             )
         )
+        self.addParameter(
+            QgsProcessingParameterEnum(
+                self.SENSOR,
+                "Sensor model",
+                options = sensor_options,
+                defaultValue = "m3m"
+            )
+        )
         
         # Advanced parameters
         self.GSD = "GSD"
         self.SENSORFACTOR = "SENSORFACTOR"
         self.ALTITUDE = "ALTITUDE"
+        self.TOSECUREALT = "TOSECUREALT"
         self.WIDTH = "WIDTH"
         self.HEIGHT = "HEIGHT"
         self.SLAP = "SLAP"
@@ -88,9 +100,17 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         )
         alt_param.setFlags(alt_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
         
+        toalt_param = QgsProcessingParameterNumber(
+            self.TOSECUREALT,
+            "Secure take-off altitude (optional, advanced)",
+            type = QgsProcessingParameterNumber.Double,
+            optional = True
+        )
+        toalt_param.setFlags(toalt_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
+        
         width_param = QgsProcessingParameterNumber(
             self.WIDTH,
-            "Image width (optional, advanced)",
+            "Plot width in m (optional, advanced)",
             type = QgsProcessingParameterNumber.Double,
             optional = True
         )
@@ -98,7 +118,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         height_param = QgsProcessingParameterNumber(
             self.HEIGHT,
-            "Image height (optional, advanced)",
+            "Plot height in m (optional, advanced)",
             type = QgsProcessingParameterNumber.Double,
             optional = True
         )
@@ -147,6 +167,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.addParameter(gsd_param)
         self.addParameter(sfact_param)
         self.addParameter(alt_param)
+        self.addParameter(toalt_param)
         self.addParameter(width_param)
         self.addParameter(height_param)
         self.addParameter(slap_param)
@@ -156,6 +177,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.addParameter(speed_param)
     
     def processAlgorithm(self, parameters, context, feedback):
+        sensor = self.parameterAsString(parameters, self.SENSOR, context)
         point = self.parameterAsPoint(parameters, self.LATLON, context)
         source_crs = context.project().crs()
         target_crs = QgsCoordinateReferenceSystem("EPSG:4326")
@@ -167,11 +189,14 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         out_dir = self.parameterAsString(parameters, self.OUTPUT, context)
         filename_input = self.parameterAsString(parameters, self.FILENAME, context)
+        sensor_index = self.parameterAsEnum(parameters, "SENSOR", context)
+        sensor = sensor_options[sensor_index]
         
         # Advanced parameters
         gsd = self.parameterAsDouble(parameters, self.GSD, context)
         sfact = self.parameterAsDouble(parameters, self.SENSORFACTOR, context)
         alt = self.parameterAsDouble(parameters, self.ALTITUDE, context)
+        toalt = self.parameterAsDouble(parameters, self.TOSECUREALT, context)
         width = self.parameterAsDouble(parameters, self.WIDTH, context)
         height = self.parameterAsDouble(parameters, self.HEIGHT, context)
         slap = self.parameterAsDouble(parameters, self.SLAP, context)
@@ -194,7 +219,8 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             "python", script_name, 
             "-lat", str(lat), 
             "-lon", str(lon), 
-            "-dst", full_output_path
+            "-dst", full_output_path,
+            "-sensor", sensor
             ]
         
         # Check advanced parameters
@@ -204,6 +230,8 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             cmd.extend(["-sf", str(sfact)])
         if parameters[self.ALTITUDE] is not None:
             cmd.extend(["-alt", str(alt)])
+        if parameters[self.TOSECUREALT] is not None:
+            cmd.extend(["-tsa", str(toalt)])
         if parameters[self.WIDTH] is not None:
             cmd.extend(["-dx", str(width)])
         if parameters[self.HEIGHT] is not None:
