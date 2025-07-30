@@ -140,7 +140,7 @@ if args.height is None:
 if args.spacing is None:
     args.spacing = np.tan(
         (args.horizontalfov / 2) * np.pi / 180
-        ) * args.altitude * ((1 - args.sideoverlap) * 2)
+        ) * args.altitude * (2 - args.sideoverlap)
 
 if args.buffer is None:
     args.buffer = args.spacing / 2
