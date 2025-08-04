@@ -18,12 +18,15 @@ class Config:
     spacing: float = None
     buffer: float = None
     horizontalfov: float = None
+    verticalfov: float = None
+    secondary_vfov: float = None
     secondary_hfov: float = None
     flightspeed: float = 3.0
     transitionspeed: float = 15.0
     lidar_returns: int = 0
     sampling_rate: int = 240000
     scanning_mode: str = "nonRepetitive"
+    imgsamplingmode: str = "distance"
 
 @dataclass
 class Defaults(Config):
@@ -38,7 +41,10 @@ class M3MConfig(Config):
     frontoverlap: float = 0.9
     overlapsensor: str = "MS"
     horizontalfov: float = 61.2
+    verticalfov: float = 48.1
     secondary_hfov: float = 84.0
+    secondary_vfov: float = None  # Unknown value, set to None
+    coefficients: list = field(default_factory = lambda: [-0.0119347, 1.19347])
     flightspeed: float = 3.0
     template_directory: str = os.path.join(".", "templates", "m3m")
 
@@ -46,12 +52,15 @@ class M3MConfig(Config):
 class Matrice400Config(Config):
     altitude: float = 70.0
     sideoverlap: float = 0.8
-    frontoverlap: float = 0.7
+    frontoverlap: float = 0.75
 
 @dataclass
 class L2Config(Matrice400Config):
     horizontalfov: float = 70.0
+    verticalfov: float = 75.0 # In non-repetitive mode
     secondary_hfov: float = 84.0
+    secondary_vfov: float = None  # Unknown value, set to None
+    coefficients: list = field(default_factory = lambda: [-0.01098424, 1.099605])
     flightspeed: float = 7.0
     overlapsensor: str = "LS"
     template_directory: str = os.path.join(".", "templates", "l2")

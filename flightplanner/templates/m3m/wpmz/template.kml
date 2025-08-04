@@ -39,9 +39,9 @@
         <wpml:facadeWaylineEnable>0</wpml:facadeWaylineEnable>
         <wpml:isLookAtSceneSet>0</wpml:isLookAtSceneSet>
         <wpml:smartObliqueGimbalPitch>-45</wpml:smartObliqueGimbalPitch>
-        <wpml:shootType>time</wpml:shootType>
-        <wpml:direction>90</wpml:direction>
-        <wpml:margin>5</wpml:margin>
+        <wpml:shootType>{IMGSPLMODE}</wpml:shootType>
+        <wpml:direction>{ANGLE}</wpml:direction>
+        <wpml:margin>{MARGIN}</wpml:margin>
         <wpml:efficiencyFlightModeEnable>0</wpml:efficiencyFlightModeEnable>
         <wpml:overlap>
           <wpml:orthoLidarOverlapH>{LHOVERLAP}</wpml:orthoLidarOverlapH>

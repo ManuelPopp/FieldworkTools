@@ -43,8 +43,8 @@
           <wpml:actionGroupEndIndex>12</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
           <wpml:actionTrigger>
-            <wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>
-            <wpml:actionTriggerParam>1.00099968910217</wpml:actionTriggerParam>
+            <wpml:actionTriggerType>{ACTIONMODE}</wpml:actionTriggerType>
+            <wpml:actionTriggerParam>{ACTIONTRIGGER}</wpml:actionTriggerParam>
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>

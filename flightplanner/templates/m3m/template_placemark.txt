@@ -52,7 +52,7 @@
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
               <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
               <wpml:payloadLensIndex>visable,narrow_band</wpml:payloadLensIndex>
-              <wpml:minShootInterval>3.88799810409546</wpml:minShootInterval>
+              <wpml:minShootInterval>{ACTIONTRIGGER}</wpml:minShootInterval>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>
@@ -62,8 +62,8 @@
           <wpml:actionGroupEndIndex>20</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
           <wpml:actionTrigger>
-            <wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>
-            <wpml:actionTriggerParam>3.88799810409546</wpml:actionTriggerParam>
+            <wpml:actionTriggerType>{ACTIONMODE}</wpml:actionTriggerType>
+            <wpml:actionTriggerParam>{ACTIONTRIGGER}</wpml:actionTriggerParam>
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
