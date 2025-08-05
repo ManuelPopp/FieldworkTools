@@ -68,7 +68,7 @@ class L2Config(Matrice400Config):
     lidar_returns: int = 5
     sampling_rate: int = 240000
     scanning_mode: str = "nonRepetitive"
-    gridmode: bool = True
+    gridmode: bool = False # Else, it cannot be overwritten by the user
 
 # Key dictionary--------------------------------------------------------
 keydict = {

@@ -440,7 +440,7 @@ def rotate_gdf(gdf, x_centre, y_centre, angle):
     centre_utm = np.array([x_centre, y_centre])
     coords = np.array(gdf.get_coordinates())
     corners_rel_to_ctr = coords - centre_utm
-    rect_rotation_rad = np.deg2rad(angle)
+    rect_rotation_rad = np.deg2rad(360 - angle)
     rotation_matrix = np.array([
         [np.cos(rect_rotation_rad), -np.sin(rect_rotation_rad)],
         [np.sin(rect_rotation_rad), np.cos(rect_rotation_rad)]
@@ -664,10 +664,14 @@ with open(
     template_text = file.read()
     template = template_text.format(
         TIMESTAMP = int(time.time() * 1000),
-        LONGITUDEMIN = np.round(min(plot_coordinates.x), 13),
-        LONGITUDEMAX = np.round(max(plot_coordinates.x), 13),
-        LATITUDEMIN = np.round(min(plot_coordinates.y), 13),
-        LATITUDEMAX = np.round(max(plot_coordinates.y), 13),
+        X0 = np.round(plot_coordinates.x[0], 13),
+        X1 = np.round(plot_coordinates.x[1], 13),
+        X2 = np.round(plot_coordinates.x[2], 13),
+        X3 = np.round(plot_coordinates.x[3], 13),
+        Y0 = np.round(plot_coordinates.y[0], 13),
+        Y1 = np.round(plot_coordinates.y[1], 13),
+        Y2 = np.round(plot_coordinates.y[2], 13),
+        Y3 = np.round(plot_coordinates.y[3], 13),
         AUTOFLIGHTSPEED = args.flightspeed,
         IMGSPLMODE = "time" if args.imgsamplingmode == "time" else "distance",
         TRANSITIONSPEED = args.transitionspeed,

@@ -53,10 +53,10 @@
           <outerBoundaryIs>
             <LinearRing>
               <coordinates>
-                {LONGITUDEMIN},{LATITUDEMAX},0
-                {LONGITUDEMAX},{LATITUDEMAX},0
-                {LONGITUDEMAX},{LATITUDEMIN},0
-                {LONGITUDEMIN},{LATITUDEMIN},0
+                {X0},{Y0},0
+                {X1},{Y1},0
+                {X2},{Y2},0
+                {X3},{Y3},0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
