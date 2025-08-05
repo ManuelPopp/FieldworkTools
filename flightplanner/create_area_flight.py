@@ -20,7 +20,7 @@ import geopandas as gpd
 from shapely.geometry import Point, LineString, Polygon
 from pyproj import Geod
 from warnings import warn
-
+os.chdir('D:\\onedrive\\OneDrive - Eidg. Forschungsanstalt WSL\\switchdrive\\PhD\\git\\FieldworkTools\\flightplanner')
 from config import ParameterSet, Defaults, keydict
 
 # Inputs----------------------------------------------------------------
@@ -34,18 +34,18 @@ parser.add_argument(
     )
 parser.add_argument(
     "--latitude", "-lat", type = float,
-    help = "Latitude of the plot center point."
+    help = "Latitude of the plot centre point."
     )
 parser.add_argument(
     "--longitude", "-lon", type = float,
-    help = "Longitude of the plot center point."
+    help = "Longitude of the plot centre point."
     )
 parser.add_argument(
     "--destfile", "-dst", type = str,
     help = "Output file."
     )
 parser.add_argument(
-    "--routeangle", "-ra", type = int, default = 90,
+    "--plotangle", "-ra", type = int, default = 90,
     help = "Route angle (relative to a South-North vector) in degrees." +
         "Defaults to 90 degrees (West-East direction)."
     )
@@ -156,7 +156,7 @@ parser.add_argument(
     "--template_directory", type = str, default = defaults.template_directory,
     help = argparse.SUPPRESS
     )
-
+args = parser.parse_args(args = ["m3m", "--latitude", "49.8938", "--longitude", "8.148593", "--destfile", "C:/Users/poppman/Desktop/tmp/test"])
 args = parser.parse_args()
 
 # Settings--------------------------------------------------------------
@@ -277,6 +277,39 @@ def get_heading_angle(p0, p1, utm_crs, src_crs = "EPSG:4326"):
 
     return phi
 
+def rotate_gdf(gdf, x_centre, y_centre, angle):
+    """
+    Rotate a GeoDataFrame around a specified centre point by a given angle.
+
+    Parameters
+    ----------
+    gdf : GeoDataFrame
+        The GeoDataFrame containing the geometries to rotate.
+    x_centre : float
+        X coordinate of the centre point around which to rotate.
+    y_centre : float
+        Y coordinate of the centre point around which to rotate.
+    angle : float
+        Angle in degrees by which to rotate the geometries.
+    """
+    centre_utm = np.array([x_centre, y_centre])
+    coords = np.array(gdf.get_coordinates())
+    corners_rel_to_ctr = coords - centre_utm
+    rect_rotation_rad = np.deg2rad(angle)
+    rotation_matrix = np.array([
+        [np.cos(rect_rotation_rad), -np.sin(rect_rotation_rad)],
+        [np.sin(rect_rotation_rad), np.cos(rect_rotation_rad)]
+    ])
+    rotated_corners_rel_to_ctr = corners_rel_to_ctr @ rotation_matrix.T
+    coords_rotated = rotated_corners_rel_to_ctr + centre_utm
+    geometries = [Point(xy) for xy in coords_rotated]
+    data = {
+        "Latitude": coords_rotated[:, 1],
+        "Longitude": coords_rotated[:, 0],
+        "geometry": geometries
+    }
+    return gpd.GeoDataFrame(data, crs = gdf.crs)
+
 def get_heading_angle(p0, p1):
     geod = Geod(ellps = "WGS84")
     azimuth, _, _ = geod.inv(p0[1], p0[0], p1[1], p1[0])
@@ -347,7 +380,7 @@ def get_overlaps(
         -------
         tuple
             Tuple containing the left side overlap, left width overlap,
-            center side overlap, and center width overlap.
+            centre side overlap, and centre width overlap.
         
         """
         if overlapsensor.lower() in ["rgb", "ms"]:
@@ -442,12 +475,12 @@ gdf = gpd.GeoDataFrame(
 ## Transform coordinates to UTM
 local_crs = gdf.estimate_utm_crs()
 gdf_utm = gdf.to_crs(local_crs)
-y_center = gdf_utm.get_coordinates().y[0]
-x_center = gdf_utm.get_coordinates().x[0]
-left = x_center - (args.width / 2)
-right = x_center + (args.width / 2)
-top = y_center + (args.height / 2)
-bottom = y_center - (args.height / 2)
+y_centre = gdf_utm.get_coordinates().y[0]
+x_centre = gdf_utm.get_coordinates().x[0]
+left = x_centre - (args.width / 2)
+right = x_centre + (args.width / 2)
+top = y_centre + (args.height / 2)
+bottom = y_centre - (args.height / 2)
 
 plot_points_utm = pd.DataFrame({
     "Latitude": [bottom, top, top, bottom],
@@ -462,6 +495,14 @@ plot_gdf_utm = gpd.GeoDataFrame(
         ),
     crs = local_crs
     )
+
+# Rotate plot if required
+if args.plotangle != 90:
+    plot_gdf_utm = rotate_gdf(
+        gdf = plot_gdf_utm,
+        x_centre = x_centre, y_centre = y_centre,
+        angle = args.plotangle - 90
+        )
 
 plot_gdf = plot_gdf_utm.to_crs("EPSG:4326")
 plot_coordinates = plot_gdf.get_coordinates()
@@ -489,7 +530,7 @@ with open(
         ALTITUDE = args.altitude,
         TOSECUREHEIGHT = args.tosecurealt,
         MARGIN = args.buffer,
-        ANGLE = args.routeangle,
+        ANGLE = args.plotangle,
         LIDARRETURNS = keydict["lidar_returns"][args.lidar_returns],
         SAMPLINGRATE = args.sampling_rate,
         SCANNINGMODE = args.scanning_mode,
@@ -547,6 +588,15 @@ wayline_gdf_utm = pd.concat(
     [wayline_gdf_utm, final_point_utm], ignore_index = True
     )
 
+# Rotate flight paths if required
+if args.plotangle != 90:
+    wayline_gdf_utm = rotate_gdf(
+        gdf = wayline_gdf_utm,
+        x_centre = x_centre, y_centre = y_centre,
+        angle = args.plotangle - 90
+    )
+
+# Convert wayline coordinates to EPSG:4326 and generate placemarks
 wayline_gdf = wayline_gdf_utm.to_crs("EPSG:4326")
 wayline_coordinates = wayline_gdf.get_coordinates()
 
