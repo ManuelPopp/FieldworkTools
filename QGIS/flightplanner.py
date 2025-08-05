@@ -13,7 +13,7 @@ import os
 import platform
 from qgis.PyQt.QtCore import QProcess
 from qgis.core import (
-    QgsProcessingAlgorithm, QgsProcessingParameterPoint, 
+    QgsProcessingAlgorithm, QgsProcessingParameterPoint,
     QgsProcessingParameterString, QgsProcessingParameterNumber,
     QgsProcessingParameterEnum,
     QgsProcessingParameterFolderDestination, QgsProcessingParameterDefinition,
@@ -264,6 +264,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             angle_deg = d.bearing(
                 point_wgs84, point2_wgs84
                 ) * 180 / 3.141592653589793
+            angle_deg = int(angle_deg)
             feedback.pushInfo(f"Computed angle {angle_deg}°.")
             
             # Overwrite centre point
