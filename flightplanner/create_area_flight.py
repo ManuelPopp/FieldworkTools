@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 __author__ = "Manuel"
 __date__ = "Mon Jul 18 10:34:06 2025"
-__credits__ = ["Manuel R. Popp"]
+__credits__ = ["Manuel R. Popp", "Elena Plekhanova"]
 __license__ = "Unlicense"
 __version__ = "1.0.1"
 __maintainer__ = "Manuel R. Popp"
@@ -20,7 +20,7 @@ import geopandas as gpd
 from shapely.geometry import Point, LineString, Polygon
 from pyproj import Geod
 from warnings import warn
-os.chdir('D:\\onedrive\\OneDrive - Eidg. Forschungsanstalt WSL\\switchdrive\\PhD\\git\\FieldworkTools\\flightplanner')
+
 from config import ParameterSet, Defaults, keydict
 
 # Inputs----------------------------------------------------------------
@@ -156,7 +156,7 @@ parser.add_argument(
     "--template_directory", type = str, default = defaults.template_directory,
     help = argparse.SUPPRESS
     )
-args = parser.parse_args(args = ["m3m", "--latitude", "49.8938", "--longitude", "8.148593", "--destfile", "C:/Users/poppman/Desktop/tmp/test"])
+
 args = parser.parse_args()
 
 # Settings--------------------------------------------------------------
