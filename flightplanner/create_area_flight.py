@@ -153,6 +153,11 @@ parser.add_argument(
     help = f"LiDAR scanning mode. Defaults to {defaults.scanning_mode}."
     )
 parser.add_argument(
+    "--gridmode", "-gm", action = "store_true",
+    help = "Use grid mode for the flight pattern. " +
+        "This will create a grid of flight paths instead of parallel lines."
+)
+parser.add_argument(
     "--template_directory", type = str, default = defaults.template_directory,
     help = argparse.SUPPRESS
     )
@@ -276,6 +281,146 @@ def get_heading_angle(p0, p1, utm_crs, src_crs = "EPSG:4326"):
     phi = np.arctan(dy / dx) / np.pi * 180
 
     return phi
+
+def lines_horizontal(
+        left, right, start, end, buffer = args.buffer, spacing = args.spacing,
+        longitude = args.longitude, latitude = args.latitude
+        ):
+    """
+    Generate horizontal lines for the flight pattern.
+
+    Parameters
+    ----------
+    left : float
+        The left boundary of the flight area.
+    right : float
+        The right boundary of the flight area.
+    start : float
+        The starting y-coordinate for the flight paths.
+    end : float
+        The ending y-coordinate for the flight paths.
+    buffer : float, optional
+        The buffer distance to add to the flight paths, by default args.buffer.
+    spacing : float, optional
+        The spacing between flight paths, by default args.spacing.
+    longitude : float, optional
+        The longitude of the flight area, by default args.longitude.
+    latitude : float, optional
+        The latitude of the flight area, by default args.latitude.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing the y-coordinates of the flight paths.
+    """
+    y_values = np.arange(start, end, spacing)[::-1]
+
+    n_paths = len(y_values)
+    print(f"Number of flight paths: {n_paths}.")
+
+    x_values = [left - buffer, right + buffer]
+    x_coords = list()
+
+    for i in range(n_paths):
+        x_coords.extend(x_values)
+        x_values.reverse()
+
+    wayline_points_utm = pd.DataFrame({
+        "y_coords": np.repeat(y_values, 2),
+        "x_coords": x_coords
+        })
+
+    wayline_gdf_utm = gpd.GeoDataFrame(
+        wayline_points_utm,
+        geometry = gpd.points_from_xy(
+            wayline_points_utm.x_coords, wayline_points_utm.y_coords
+            ),
+        crs = local_crs
+        )
+
+    final_point = gpd.GeoDataFrame(
+        geometry = [Point(longitude, latitude)],
+        crs = "EPSG:4326"
+    )
+
+    final_point_utm = final_point.to_crs(local_crs)
+
+    return pd.concat(
+        [wayline_gdf_utm, final_point_utm], ignore_index = True
+        )
+
+def lines_vertical(
+        top, bottom, start, end, buffer = args.buffer, spacing = args.spacing,
+        longitude = args.longitude, latitude = args.latitude, start_x = None
+):
+    """
+    Generate vertical lines for the flight pattern.
+    Parameters
+    ----------
+    top : float
+        The top boundary of the flight area.
+    bottom : float
+        The bottom boundary of the flight area.
+    start : float
+        The starting x-coordinate for the flight paths.
+    end : float
+        The ending x-coordinate for the flight paths.
+    buffer : float, optional
+        The buffer distance to add to the flight paths, by default args.buffer.
+    spacing : float, optional
+        The spacing between flight paths, by default args.spacing.
+    longitude : float, optional
+        The longitude of the flight area, by default args.longitude.
+    latitude : float, optional
+        The latitude of the flight area, by default args.latitude.
+    start_x : float, optional
+        The starting x-coordinate for the flight paths. If provided, the
+        first x-coordinate will be adjusted to be closer to this value.
+    
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing the x-coordinates of the flight paths.
+    """
+    x_values = np.arange(start, end, spacing)[::-1]
+    
+    if start_x is not None:
+        if np.abs(x_values[0] - start_x) > np.abs(x_values[-1] - start_x):
+            x_values[:] = x_values[::-1]
+    
+    n_paths = len(x_values)
+    print(f"Number of flight paths: {n_paths}.")
+
+    y_values = [bottom - buffer, top + buffer]
+    y_coords = list()
+
+    for i in range(n_paths):
+        y_coords.extend(y_values)
+        y_values.reverse()
+
+    wayline_points_utm = pd.DataFrame({
+        "x_coords": np.repeat(x_values, 2),
+        "y_coords": y_coords
+    })
+
+    wayline_gdf_utm = gpd.GeoDataFrame(
+        wayline_points_utm,
+        geometry = gpd.points_from_xy(
+            wayline_points_utm.x_coords, wayline_points_utm.y_coords
+            ),
+        crs = local_crs
+        )
+
+    final_point = gpd.GeoDataFrame(
+        geometry = [Point(longitude, latitude)],
+        crs = "EPSG:4326"
+    )
+
+    final_point_utm = final_point.to_crs(local_crs)
+
+    return pd.concat(
+        [wayline_gdf_utm, final_point_utm], ignore_index = True
+        )
 
 def rotate_gdf(gdf, x_centre, y_centre, angle):
     """
@@ -552,41 +697,35 @@ n_parts = int(span // args.spacing)
 offset = (span - n_parts * args.spacing) / 2
 start = bottom - args.buffer + offset
 end = top + args.buffer
-y_values = np.arange(start, end, args.spacing)[::-1]
 
-n_paths = len(y_values)
-print(f"Number of flight paths: {n_paths}.")
-
-x_values = [left - args.buffer, right + args.buffer]
-x_coords = list()
-
-for i in range(n_paths):
-    x_coords.extend(x_values)
-    x_values.reverse()
-
-wayline_points_utm = pd.DataFrame({
-    "y_coords": np.repeat(y_values, 2),
-    "x_coords": x_coords
-    })
-
-wayline_gdf_utm = gpd.GeoDataFrame(
-    wayline_points_utm,
-    geometry = gpd.points_from_xy(
-        wayline_points_utm.x_coords, wayline_points_utm.y_coords
-        ),
-    crs = local_crs
-    )
-
-final_point = gpd.GeoDataFrame(
-    geometry = [Point(args.longitude, args.latitude)],
-    crs = "EPSG:4326"
+wayline_gdf_utm = lines_horizontal(
+    left = left,
+    right = right,
+    start = start,
+    end = end
 )
 
-final_point_utm = final_point.to_crs(local_crs)
+if args.gridmode:
+    wayline_gdf_utm = wayline_gdf_utm.iloc[:-1]
+    right -= 0.5 * args.spacing
+    left += 0.5 * args.spacing
+    span = (right + 2 * args.buffer - left)
+    n_parts = int(span // args.spacing)
+    offset = (span - n_parts * args.spacing) / 2
+    start = left - args.buffer + offset
+    end = right + args.buffer
 
-wayline_gdf_utm = pd.concat(
-    [wayline_gdf_utm, final_point_utm], ignore_index = True
+    wayline_gdf_utm_vertical = lines_vertical(
+        top = top,
+        bottom = bottom,
+        start = start,
+        end = end,
+        start_x = wayline_gdf_utm.get_coordinates().iloc[-1, 0]
     )
+
+    wayline_gdf_utm = pd.concat(
+        [wayline_gdf_utm, wayline_gdf_utm_vertical], ignore_index = True
+        )
 
 # Rotate flight paths if required
 if args.plotangle != 90:

@@ -27,6 +27,7 @@ class Config:
     sampling_rate: int = 240000
     scanning_mode: str = "nonRepetitive"
     imgsamplingmode: str = "distance"
+    gridmode: bool = False
 
 @dataclass
 class Defaults(Config):
@@ -67,6 +68,7 @@ class L2Config(Matrice400Config):
     lidar_returns: int = 5
     sampling_rate: int = 240000
     scanning_mode: str = "nonRepetitive"
+    gridmode: bool = True
 
 # Key dictionary--------------------------------------------------------
 keydict = {
