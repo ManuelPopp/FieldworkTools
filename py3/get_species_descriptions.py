@@ -26,6 +26,9 @@ def flatten_object(
     exclude_tags : list
         A list of tags to exclude from the flattened output.
         Supports regular expressions.
+    keywords : list
+        A list of keywords that must be present in each fraction of the
+        flattened output.
     
     Returns
     -------
@@ -161,7 +164,8 @@ if __name__ == "__main__":
             "food", "conservation", "synonym", "vernacular",
             "usematerial", "usemedicine", "usepoison", "usesocial",
             "useenvironmental"
-        ], keywords = ["flower", "leaf", "stem", "trunk", "buttress"],
+        ],
+        keywords = ["flower", "leaf", "stem", "trunk", "buttress"],
         flatten = True
         )
     print(description)
