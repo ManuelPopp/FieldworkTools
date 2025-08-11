@@ -5,7 +5,10 @@ from pykew.powo_terms import Name, Filters
 def strip_html(text):
     return re.sub(r"<[^>]+>", "", text)
 
-def flatten_object(obj, level = 0, clean = True, exclude_tags = None):
+def flatten_object(
+        obj, level = 0, clean = True, include_tags = None, exclude_tags = None,
+        keywords = None
+        ):
     """
     Flatten a nested object into a string representation.
     
@@ -17,6 +20,9 @@ def flatten_object(obj, level = 0, clean = True, exclude_tags = None):
         The current level of nesting (used for indentation).
     clean : bool
         Whether to remove HTML tags from the flattened output.
+    include_tags : list
+        A list of tags to include in the flattened output.
+        Supports regular expressions.
     exclude_tags : list
         A list of tags to exclude from the flattened output.
         Supports regular expressions.
@@ -26,27 +32,75 @@ def flatten_object(obj, level = 0, clean = True, exclude_tags = None):
     str
         The flattened string representation of the object.
     """
+    def matches_any(key, patterns):
+        for pattern in patterns:
+            if not pattern:
+                continue
+            if re.search(pattern, key, re.IGNORECASE):
+                return True
+        return False
+    
+    def has_include_tag(obj, patterns):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if matches_any(k, patterns):
+                    return True
+                if has_include_tag(v, patterns):
+                    return True
+        elif isinstance(obj, list):
+            for item in obj:
+                if has_include_tag(item, patterns):
+                    return True
+        return False
+    
+    if include_tags is None:
+        include_tags = []
     if exclude_tags is None:
         exclude_tags = []
+    
+    if isinstance(obj, str):
+        return strip_html(obj) if clean else obj
+    
     if isinstance(obj, dict):
+        if include_tags and has_include_tag(obj, include_tags):
+            return flatten_object(
+                obj, level, clean, include_tags = None,
+                exclude_tags = exclude_tags
+                )
+        
         parts = []
         for k, v in obj.items():
-            if any(
-                re.fullmatch(
-                    pattern.replace("*", ".*"), k, re.IGNORECASE
-                    ) for pattern in exclude_tags
-                ):
+            if matches_any(k, exclude_tags):
+                continue
+            if include_tags and not matches_any(k, include_tags):
                 continue
             parts.append(
-                f"{k}: {flatten_object(v, level + 1, clean, exclude_tags)}"
+                f"{k}: {flatten_object(
+                    v, level + 1, clean, include_tags, exclude_tags
+                    )}"
                 )
         return "\n\n".join(parts)
-    elif isinstance(obj, list):
+
+    if isinstance(obj, list):
         return "\n".join(
-            flatten_object(v, level + 1, clean, exclude_tags) for v in obj
+            flatten_object(
+                v, level + 1, clean, include_tags, exclude_tags
+                ) for v in obj
             )
-    else:
-        return strip_html(str(obj)) if clean else str(obj)
+    
+    text = strip_html(str(obj)) if clean else str(obj)
+
+    if keywords:
+        text.split("\n")
+        text = [
+            line for line in text if any(
+                re.search(keyword, line, re.IGNORECASE) for keyword in keywords
+                )
+            ]
+        text = "\n".join(text)
+    
+    return text
+
 
 def get_descriptions(
         name = None, genus = None, epithet = None, flatten = True, **kwargs
@@ -99,5 +153,15 @@ def get_descriptions(
 
 # Usage example
 if __name__ == "__main__":
-    description = get_descriptions(name = "Bellis perennis")
+    description = get_descriptions(
+        name = "Ceiba pentandra",
+        include_tags = ["morph"],
+        exclude_tags = [
+            "source", "distribution", "author",
+            "food", "conservation", "synonym", "vernacular",
+            "usematerial", "usemedicine", "usepoison", "usesocial",
+            "useenvironmental"
+        ], keywords = ["flower", "leaf", "stem", "trunk", "buttress"],
+        flatten = True
+        )
     print(description)
