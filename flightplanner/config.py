@@ -23,6 +23,7 @@ class Config:
     secondary_hfov: float = None
     flightspeed: float = 3.0
     transitionspeed: float = 15.0
+    wpturnmode: str = "toPointAndStopWithDiscontinuityCurvature"
     lidar_returns: int = 0
     sampling_rate: int = 240000
     scanning_mode: str = "nonRepetitive"

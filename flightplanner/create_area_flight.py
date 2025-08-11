@@ -21,7 +21,9 @@ from shapely.geometry import Point, LineString, Polygon
 from pyproj import Geod
 from warnings import warn
 
-from config import ParameterSet, Defaults, keydict
+from config import ParameterSet, Defaults
+from mission import Mission
+from lib.functions import *
 
 # Inputs----------------------------------------------------------------
 ## Parse input arguments
@@ -135,8 +137,31 @@ parser.add_argument(
         f"Defaults to {defaults.transitionspeed}."
     )
 parser.add_argument(
-    "--imgsamplingmode", "-ism", type = str, default = defaults.imgsamplingmode,
+    "--wpturnmode", "-wptm", type = str,
+    choices = [
+        "toPointAndStopWithDiscontinuityCurvature",
+        "toPointAndStopWithContinuityCurvature",
+        "toPointAndPassWithContinuityCurvature",
+        "coordinateTurn"
+        ],
+    default = defaults.wpturnmode,
+    help = "\n".join([
+        "Waypoint turn mode. Options:",
+        "toPointAndStopWithDiscontinuityCurvature: " +
+        "Fly in a straight line and the aircraft stops at the point.",
+        "toPointAndStopWithContinuityCurvature: " +
+        "Fly in a curve and the aircraft stops at the point.",
+        "toPointAndPassWithContinuityCurvature: " +
+        "Fly in a curve and the aircraft will not stop at the point.",
+        "coordinateTurn: " +
+        "Coordinated turns, no dips, early turns.",
+        f"Defaults to {defaults.wpturnmode}."
+    ])
+)
+parser.add_argument(
+    "--imgsamplingmode", "-ism", type = str,
     choices = ["time", "distance"],
+    default = defaults.imgsamplingmode,
     help = f"Image sampling mode. Defaults to {defaults.imgsamplingmode}."
     )
 parser.add_argument(
@@ -153,6 +178,10 @@ parser.add_argument(
     help = f"LiDAR scanning mode. Defaults to {defaults.scanning_mode}."
     )
 parser.add_argument(
+    "--calibrateimu", "-cimu", type = str, action = "store_true",
+    help = f"LiDAR sensor IMU calibration."
+    )
+parser.add_argument(
     "--gridmode", "-gm", action = "store_true",
     help = "Use grid mode for the flight pattern. " +
         "This will create a grid of flight paths instead of parallel lines."
@@ -164,534 +193,12 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-# Settings--------------------------------------------------------------
-## Ensure the output is a .kmz file
-if os.path.splitext(args.destfile)[1].lower() != ".kmz":
-    args.destfile = args.destfile + ".kmz"
-
-## Get altitude from sensor parameters and GSD if not set
-if args.altitude is None:
-    args.altitude = args.gsd * args.sensorfactor
-
-## Set plot width and height if missing
-if args.width is None and args.height is None:
-    args.width = np.sqrt(args.area)
-    args.height = np.sqrt(args.area)
-
-if args.width is None:
-    args.width = args.area / args.height
-
-if args.height is None:
-    args.height = args.area / args.width
-
-## Set spacing if missing; else, overwrite side overlap
-if args.spacing is None:
-    """Not working! Not working! Not working! Not working! Not working!
-    args.spacing = np.tan(
-        (args.horizontalfov / 2) * np.pi / 180
-        ) * args.altitude * (2 - args.sideoverlap)
-    """
-    c1, c2 = args.coefficients
-    args.spacing = (c1 * args.sideoverlap * 100 + c2) * args.altitude
-else:
-    """Not working! Not working! Not working! Not working! Not working!
-    args.sideoverlap = 2 - args.spacing / (
-        np.tan((args.horizontalfov / 2) * np.pi / 180) * args.altitude
-        )
-    """
-    c1, c2 = args.coefficients
-    args.sideoverlap = (args.spacing / (args.altitude * 100) - c2) / c1
-    warn(
-        "Spacing set by user. This will override the side overlap. " +
-        f"Side overlap is now {args.sideoverlap}."
-        )
-
-if args.sideoverlap < 0 or args.sideoverlap > 1:
-    raise ValueError(
-        "Side overlap (fraction) must be between 0 and 1. " +
-        f"Got {args.sideoverlap}."
-        )
-
-## Compute a default buffer value if not set
-if args.buffer is None:
-    args.buffer = args.spacing / 2
-
-args.buffer = int(round(args.buffer))
-
-## Use integers where possible (like DJI does)
-if args.altitude == int(args.altitude):
-    args.altitude = int(args.altitude)
-
-if args.tosecurealt == int(args.tosecurealt):
-    args.tosecurealt = int(args.tosecurealt)
-
-if args.flightspeed == int(args.flightspeed):
-    args.flightspeed = int(args.flightspeed)
-
-if args.transitionspeed == int(args.transitionspeed):
-    args.transitionspeed = int(args.transitionspeed)
-
-## Convert overlaps to percentages
-side_overlap = int(args.sideoverlap * 100)
-front_overlap = int(args.frontoverlap * 100)
-
-## Print input settings
-print("== Settings ==")
-for arg, value in args.__dict__.items():
-    print(f"{arg}={value}")
-
-# Functions-------------------------------------------------------------
-def get_heading_angle(p0, p1, utm_crs, src_crs = "EPSG:4326"):
-    """
-    Compute the heading angle (azimuth) between two waypoints.
-
-    Parameters
-    ----------
-    p0 : tuple
-        Coordinates of the first point (longitude, latitude).
-    p1 : tuple
-        Coordinates of the second point (longitude, latitude).
-    utm_crs : str
-        UTM coordinate reference system (CRS) to use for the calculation.
-    src_crs : str, optional
-        Source CRS of the input points, by default "EPSG:4326".
-    
-    Returns
-    -------
-    float
-        Heading angle in degrees.
-    
-    """
-    pdf = pd.DataFrame({
-        "ID": [0, 1],
-        "Latitude": [p0[0], p1[0]],
-        "Longitude": [p0[1], p1[1]]
-    })
-    
-    pgdf = gpd.GeoDataFrame(
-        pdf,
-        geometry = gpd.points_from_xy(pdf.Longitude, pdf.Latitude),
-        crs = "EPSG:4326"
-        )
-    
-    pgdf_utm = pgdf.to_crs(utm_crs)
-    coords = pgdf_utm.get_coordinates()
-    dx = coords.x[1] - coords.x[0]
-    dy = coords.y[1] - coords.y[0]
-    phi = np.arctan(dy / dx) / np.pi * 180
-
-    return phi
-
-def lines_horizontal(
-        left, right, start, end, buffer = args.buffer, spacing = args.spacing,
-        longitude = args.longitude, latitude = args.latitude
-        ):
-    """
-    Generate horizontal lines for the flight pattern.
-
-    Parameters
-    ----------
-    left : float
-        The left boundary of the flight area.
-    right : float
-        The right boundary of the flight area.
-    start : float
-        The starting y-coordinate for the flight paths.
-    end : float
-        The ending y-coordinate for the flight paths.
-    buffer : float, optional
-        The buffer distance to add to the flight paths, by default args.buffer.
-    spacing : float, optional
-        The spacing between flight paths, by default args.spacing.
-    longitude : float, optional
-        The longitude of the flight area, by default args.longitude.
-    latitude : float, optional
-        The latitude of the flight area, by default args.latitude.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame containing the y-coordinates of the flight paths.
-    """
-    y_values = np.arange(start, end, spacing)[::-1]
-
-    n_paths = len(y_values)
-    print(f"Number of flight paths: {n_paths}.")
-
-    x_values = [left - buffer, right + buffer]
-    x_coords = list()
-
-    for i in range(n_paths):
-        x_coords.extend(x_values)
-        x_values.reverse()
-
-    wayline_points_utm = pd.DataFrame({
-        "y_coords": np.repeat(y_values, 2),
-        "x_coords": x_coords
-        })
-
-    wayline_gdf_utm = gpd.GeoDataFrame(
-        wayline_points_utm,
-        geometry = gpd.points_from_xy(
-            wayline_points_utm.x_coords, wayline_points_utm.y_coords
-            ),
-        crs = local_crs
-        )
-
-    final_point = gpd.GeoDataFrame(
-        geometry = [Point(longitude, latitude)],
-        crs = "EPSG:4326"
-    )
-
-    final_point_utm = final_point.to_crs(local_crs)
-
-    return pd.concat(
-        [wayline_gdf_utm, final_point_utm], ignore_index = True
-        )
-
-def lines_vertical(
-        top, bottom, start, end, buffer = args.buffer, spacing = args.spacing,
-        longitude = args.longitude, latitude = args.latitude, start_x = None
-):
-    """
-    Generate vertical lines for the flight pattern.
-    Parameters
-    ----------
-    top : float
-        The top boundary of the flight area.
-    bottom : float
-        The bottom boundary of the flight area.
-    start : float
-        The starting x-coordinate for the flight paths.
-    end : float
-        The ending x-coordinate for the flight paths.
-    buffer : float, optional
-        The buffer distance to add to the flight paths, by default args.buffer.
-    spacing : float, optional
-        The spacing between flight paths, by default args.spacing.
-    longitude : float, optional
-        The longitude of the flight area, by default args.longitude.
-    latitude : float, optional
-        The latitude of the flight area, by default args.latitude.
-    start_x : float, optional
-        The starting x-coordinate for the flight paths. If provided, the
-        first x-coordinate will be adjusted to be closer to this value.
-    
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame containing the x-coordinates of the flight paths.
-    """
-    x_values = np.arange(start, end, spacing)[::-1]
-    
-    if start_x is not None:
-        if np.abs(x_values[0] - start_x) > np.abs(x_values[-1] - start_x):
-            x_values[:] = x_values[::-1]
-    
-    n_paths = len(x_values)
-    print(f"Number of flight paths: {n_paths}.")
-
-    y_values = [bottom - buffer, top + buffer]
-    y_coords = list()
-
-    for i in range(n_paths):
-        y_coords.extend(y_values)
-        y_values.reverse()
-
-    wayline_points_utm = pd.DataFrame({
-        "x_coords": np.repeat(x_values, 2),
-        "y_coords": y_coords
-    })
-
-    wayline_gdf_utm = gpd.GeoDataFrame(
-        wayline_points_utm,
-        geometry = gpd.points_from_xy(
-            wayline_points_utm.x_coords, wayline_points_utm.y_coords
-            ),
-        crs = local_crs
-        )
-
-    final_point = gpd.GeoDataFrame(
-        geometry = [Point(longitude, latitude)],
-        crs = "EPSG:4326"
-    )
-
-    final_point_utm = final_point.to_crs(local_crs)
-
-    return pd.concat(
-        [wayline_gdf_utm, final_point_utm], ignore_index = True
-        )
-
-def rotate_gdf(gdf, x_centre, y_centre, angle):
-    """
-    Rotate a GeoDataFrame around a specified centre point by a given angle.
-
-    Parameters
-    ----------
-    gdf : GeoDataFrame
-        The GeoDataFrame containing the geometries to rotate.
-    x_centre : float
-        X coordinate of the centre point around which to rotate.
-    y_centre : float
-        Y coordinate of the centre point around which to rotate.
-    angle : float
-        Angle in degrees by which to rotate the geometries.
-    """
-    centre_utm = np.array([x_centre, y_centre])
-    coords = np.array(gdf.get_coordinates())
-    corners_rel_to_ctr = coords - centre_utm
-    rect_rotation_rad = np.deg2rad(360 - angle)
-    rotation_matrix = np.array([
-        [np.cos(rect_rotation_rad), -np.sin(rect_rotation_rad)],
-        [np.sin(rect_rotation_rad), np.cos(rect_rotation_rad)]
-    ])
-    rotated_corners_rel_to_ctr = corners_rel_to_ctr @ rotation_matrix.T
-    coords_rotated = rotated_corners_rel_to_ctr + centre_utm
-    geometries = [Point(xy) for xy in coords_rotated]
-    data = {
-        "Latitude": coords_rotated[:, 1],
-        "Longitude": coords_rotated[:, 0],
-        "geometry": geometries
-    }
-    return gpd.GeoDataFrame(data, crs = gdf.crs)
-
-def get_heading_angle(p0, p1):
-    geod = Geod(ellps = "WGS84")
-    azimuth, _, _ = geod.inv(p0[1], p0[0], p1[1], p1[0])
-
-    return azimuth
-
-def estimate_lidar_forward_overlap(velocity, altitude, theta_deg = 75.):
-    """
-    Estimate the forward overlap for LiDAR missions based on velocity
-    and altitude. (Warning: Might not work. Currently not required.)
-    
-    Parameters
-    ----------
-    velocity : float
-        Flight velocity in m/s.
-    altitude : float
-        Flight altitude in meters.
-    theta_deg : float, optional
-        Scan angle in degrees, by default 75.
-    
-    Returns
-    -------
-    float
-        Forward overlap as a fraction.
-    
-    """
-    effective_scan_revisit_rate = 0.23
-    warn(
-        f"Actual revisit rate is unknown. Using {effective_scan_revisit_rate} s."
-        )
-    
-    theta_rad = np.radians(theta_deg)
-    fo = 1 - (
-        velocity / effective_scan_revisit_rate
-        ) / (
-            2 * altitude * np.tan(theta_rad / 2)
-            )
-
-    return fo
-
-def get_overlaps(
-        horizontalfov, secondary_hfov, altitude, spacing, overlapsensor,
-        side_overlap, front_overlap
-        ):
-        """NOT WORKING! NOT WORKING! NOT WORKING! NOT WORKING! NOT WORKING!
-        Calculate the overlaps for the flight pattern based on the
-        horizontal field of view, secondary horizontal field of view,
-        altitude, spacing, and overlap sensor.
-
-        Parameters
-        ----------
-        horizontalfov : float
-            Horizontal field of view in degrees.
-        secondary_hfov : float
-            Secondary horizontal field of view in degrees.
-        altitude : float
-            Flight altitude in meters.
-        spacing : float
-            Flight spacing in meters.
-        overlapsensor : str
-            Overlap sensor type.
-        side_overlap : float
-            Side overlap as a fraction (0 to 1).
-        front_overlap : float
-            Front overlap as a fraction (0 to 1).
-        
-        Returns
-        -------
-        tuple
-            Tuple containing the left side overlap, left width overlap,
-            centre side overlap, and centre width overlap.
-        
-        """
-        if overlapsensor.lower() in ["rgb", "ms"]:
-            lsolaph = colaph = front_overlap
-            lsolapw = colapw = side_overlap
-
-        if overlapsensor.lower() == "ls":
-            #side_ol_main = 2 - spacing / (
-            #    np.tan((horizontalfov / 2) * np.pi / 180) * altitude
-            #    )
-            try:
-                side_ol_sec = (
-                    2 - spacing / (
-                        np.tan((secondary_hfov / 2) * np.pi / 180) * altitude
-                        )
-                    ) * 100
-            except TypeError as e:
-                warn(
-                    f"Error calculating side overlap: {e}. Using side " +
-                    f"overlap {side_overlap} for secondary sensor."
-                    )
-                side_ol_sec = side_overlap
-            
-            lsolaph = front_overlap
-            lsolapw = side_overlap
-            colaph = front_overlap
-            colapw = side_ol_sec
-        
-        return (lsolaph, lsolapw, colaph, colapw)
-
-def photo_trigger_intervals(
-        front_overlap_fraction, vertical_fov, altitude, velocity
-        ):
-    """NOT WORKING! NOT WORKING! NOT WORKING! NOT WORKING! NOT WORKING!
-    Calculate the time interval between photo triggers based on the
-    front overlap fraction, vertical field of view, altitude, and velocity.
-    
-    Parameters
-    ----------
-    front_overlap_fraction : float
-        Fraction of front overlap (0 to 1).
-    vertical_fov : float
-        Vertical field of view in degrees.
-    altitude : float
-        Flight altitude in meters.
-    velocity : float
-        Flight velocity in m/s.
-    
-    Returns
-    -------
-    float
-        Time interval between photo triggers in seconds.
-    
-    """
-    try:
-        fov_half = vertical_fov / 2 * np.pi / 180
-        delta_t = (
-            2 - front_overlap_fraction
-            ) * np.tan(fov_half) * altitude / velocity
-        return delta_t
-    except ZeroDivisionError as e:
-        warn(f"Error calculating photo trigger intervals: {e}. Using default.")
-    except TypeError as e:
-        warn(f"Error calculating photo trigger intervals: {e}. Using default.")
-    return 1.0
-
-def get_mapping_vertical_fov():
-    """
-    Get the mapping for vertical field of view (FOV).
-    """
-    if args.overlapsensor.lower() in ["rgb", "ms"]:
-        fov = args.verticalfov
-    else:
-        fov = args.secondary_vfov
-    
-    return fov
-
 # Body------------------------------------------------------------------
 ## Create dataframe
-df = pd.DataFrame({
-    "ID": [1],
-    "Latitude": [args.latitude],
-    "Longitude": [args.longitude]
-    })
-
-gdf = gpd.GeoDataFrame(
-    df,
-    geometry = gpd.points_from_xy(df.Longitude, df.Latitude),
-    crs = "EPSG:4326"
-    )
-
-## Transform coordinates to UTM
-local_crs = gdf.estimate_utm_crs()
-gdf_utm = gdf.to_crs(local_crs)
-y_centre = gdf_utm.get_coordinates().y[0]
-x_centre = gdf_utm.get_coordinates().x[0]
-left = x_centre - (args.width / 2)
-right = x_centre + (args.width / 2)
-top = y_centre + (args.height / 2)
-bottom = y_centre - (args.height / 2)
-
-plot_points_utm = pd.DataFrame({
-    "Latitude": [bottom, top, top, bottom],
-    "Longitude": [left, left, right, right]
-    })
-
-plot_gdf_utm = gpd.GeoDataFrame(
-    plot_points_utm,
-    geometry = gpd.points_from_xy(
-        plot_points_utm.Longitude,
-        plot_points_utm.Latitude
-        ),
-    crs = local_crs
-    )
-
-# Rotate plot if required
-if args.plotangle != 90:
-    plot_gdf_utm = rotate_gdf(
-        gdf = plot_gdf_utm,
-        x_centre = x_centre, y_centre = y_centre,
-        angle = args.plotangle - 90
-        )
-
-plot_gdf = plot_gdf_utm.to_crs("EPSG:4326")
-plot_coordinates = plot_gdf.get_coordinates()
+mission = Mission(args)
 
 ## Generate template.kml
-lsolaph, lsolapw, colaph, colapw = get_overlaps(
-    args.horizontalfov, args.secondary_hfov, args.altitude, args.spacing,
-    args.overlapsensor, side_overlap, front_overlap
-    )
-
-with open(
-    os.path.join(args.template_directory, "wpmz", "template.kml"), "r"
-    ) as file:
-    template_text = file.read()
-    template = template_text.format(
-        TIMESTAMP = int(time.time() * 1000),
-        X0 = np.round(plot_coordinates.x[0], 13),
-        X1 = np.round(plot_coordinates.x[1], 13),
-        X2 = np.round(plot_coordinates.x[2], 13),
-        X3 = np.round(plot_coordinates.x[3], 13),
-        Y0 = np.round(plot_coordinates.y[0], 13),
-        Y1 = np.round(plot_coordinates.y[1], 13),
-        Y2 = np.round(plot_coordinates.y[2], 13),
-        Y3 = np.round(plot_coordinates.y[3], 13),
-        AUTOFLIGHTSPEED = args.flightspeed,
-        IMGSPLMODE = "time" if args.imgsamplingmode == "time" else "distance",
-        TRANSITIONSPEED = args.transitionspeed,
-        EXECALTITUDE = args.altitude,
-        ALTITUDE = args.altitude,
-        TOSECUREHEIGHT = args.tosecurealt,
-        MARGIN = args.buffer,
-        ANGLE = args.plotangle,
-        LIDARRETURNS = keydict["lidar_returns"][args.lidar_returns],
-        SAMPLINGRATE = args.sampling_rate,
-        SCANNINGMODE = args.scanning_mode,
-        LHOVERLAP = lsolaph,
-        LWOVERLAP = lsolapw,
-        CHOVERLAP = colaph,
-        CWOVERLAP = colapw
-        )
-
-with zipfile.ZipFile(args.destfile, "a") as zf:
-    with zf.open("wpmz/template.kml", "w") as f:
-        f.write(template.encode("utf8"))
+mission.write_template_kml()
 
 ## Generate waylines.wpml
 top -= 0.5 * args.spacing
@@ -775,6 +282,7 @@ for index, (longitude, latitude) in wayline_coordinates.iterrows():
         INDEX = index,
         EXECALTITUDE = args.altitude,
         WPSPEED = args.flightspeed,
+        WPTURNMODE = args.wpturnmode,
         WPHEADINGANGLE = heading_angle,
         ACTIONMODE = "multipleTime" if args.imgsamplingmode == "time" \
             else "multipleDistance",

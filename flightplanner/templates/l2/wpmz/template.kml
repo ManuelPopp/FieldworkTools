@@ -38,7 +38,7 @@
       </wpml:waylineCoordinateSysParam>
       <wpml:autoFlightSpeed>{AUTOFLIGHTSPEED}</wpml:autoFlightSpeed>
       <Placemark>
-        <wpml:caliFlightEnable>0</wpml:caliFlightEnable>
+        <wpml:caliFlightEnable>{IMUCALIBARATION}</wpml:caliFlightEnable>
         <wpml:elevationOptimizeEnable>1</wpml:elevationOptimizeEnable>
         <wpml:smartObliqueEnable>0</wpml:smartObliqueEnable>
         <wpml:quickOrthoMappingEnable>0</wpml:quickOrthoMappingEnable>
