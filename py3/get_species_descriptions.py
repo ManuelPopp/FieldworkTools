@@ -5,7 +5,7 @@ from pykew.powo_terms import Name, Filters
 def strip_html(text):
     return re.sub(r"<[^>]+>", "", text)
 
-def flatten_object(obj, level = 0, clean = True):
+def flatten_object(obj, level = 0, clean = True, exclude_tags = None):
     """
     Flatten a nested object into a string representation.
     
@@ -17,19 +17,34 @@ def flatten_object(obj, level = 0, clean = True):
         The current level of nesting (used for indentation).
     clean : bool
         Whether to remove HTML tags from the flattened output.
+    exclude_tags : list
+        A list of tags to exclude from the flattened output.
+        Supports regular expressions.
     
     Returns
     -------
     str
         The flattened string representation of the object.
     """
+    if exclude_tags is None:
+        exclude_tags = []
     if isinstance(obj, dict):
         parts = []
         for k, v in obj.items():
-            parts.append(f"{k}: {flatten_object(v, level + 1)}")
+            if any(
+                re.fullmatch(
+                    pattern.replace("*", ".*"), k, re.IGNORECASE
+                    ) for pattern in exclude_tags
+                ):
+                continue
+            parts.append(
+                f"{k}: {flatten_object(v, level + 1, clean, exclude_tags)}"
+                )
         return "\n\n".join(parts)
     elif isinstance(obj, list):
-        return "\n".join(flatten_object(v, level + 1) for v in obj)
+        return "\n".join(
+            flatten_object(v, level + 1, clean, exclude_tags) for v in obj
+            )
     else:
         return strip_html(str(obj)) if clean else str(obj)
 
