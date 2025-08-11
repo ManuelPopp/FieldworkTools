@@ -62,13 +62,24 @@ def flatten_object(
         exclude_tags = []
     
     if isinstance(obj, str):
-        return strip_html(obj) if clean else obj
+        text = strip_html(obj) if clean else obj
+        
+        if keywords:
+            text = text.split("\n")
+            text = [
+                line.strip() for line in text if any(
+                    re.search(keyword, line, re.IGNORECASE) for keyword in keywords
+                    )
+                ]
+            text = "\n".join(text)
+        return text
     
     if isinstance(obj, dict):
         if include_tags and has_include_tag(obj, include_tags):
             return flatten_object(
                 obj, level, clean, include_tags = None,
-                exclude_tags = exclude_tags
+                exclude_tags = exclude_tags,
+                keywords = keywords
                 )
         
         parts = []
@@ -77,32 +88,23 @@ def flatten_object(
                 continue
             if include_tags and not matches_any(k, include_tags):
                 continue
-            parts.append(
-                f"{k}: {flatten_object(
-                    v, level + 1, clean, include_tags, exclude_tags
-                    )}"
-                )
+            output = flatten_object(
+                    v, level + 1, clean, include_tags, exclude_tags, keywords
+                    )
+            if output:
+                parts.append(
+                    f"{k}: {output}"
+                    )
         return "\n".join(parts)
 
     if isinstance(obj, list):
         return "\n".join(
             flatten_object(
-                v, level + 1, clean, include_tags, exclude_tags
+                v, level + 1, clean, include_tags, exclude_tags, keywords
                 ) for v in obj
             )
     
-    text = strip_html(str(obj)) if clean else str(obj)
-
-    if keywords:
-        text = text.split("\n")
-        text = [
-            line.strip() for line in text if any(
-                re.search(keyword, line, re.IGNORECASE) for keyword in keywords
-                )
-            ]
-        text = "\n".join(text)
-    
-    return text
+    return obj
 
 
 def get_descriptions(
@@ -157,7 +159,9 @@ def get_descriptions(
 # Usage example
 if __name__ == "__main__":
     description = get_descriptions(
-        name = "Ceiba pentandra",
+        genus = "Ceiba",
+        epithet = "pentandra",
+        flatten = True,
         include_tags = ["morph"],
         exclude_tags = [
             "source", "distribution", "author",
@@ -165,7 +169,6 @@ if __name__ == "__main__":
             "usematerial", "usemedicine", "usepoison", "usesocial",
             "useenvironmental"
         ],
-        keywords = ["flower", "leaf", "stem", "trunk", "buttress"],
-        flatten = True
+        keywords = ["flower", "leaf", "stem", "trunk", "buttress"]
         )
     print(description)
