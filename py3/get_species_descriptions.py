@@ -79,7 +79,7 @@ def flatten_object(
                     v, level + 1, clean, include_tags, exclude_tags
                     )}"
                 )
-        return "\n\n".join(parts)
+        return "\n".join(parts)
 
     if isinstance(obj, list):
         return "\n".join(
@@ -91,9 +91,9 @@ def flatten_object(
     text = strip_html(str(obj)) if clean else str(obj)
 
     if keywords:
-        text.split("\n")
+        text = text.split("\n")
         text = [
-            line for line in text if any(
+            line.strip() for line in text if any(
                 re.search(keyword, line, re.IGNORECASE) for keyword in keywords
                 )
             ]
