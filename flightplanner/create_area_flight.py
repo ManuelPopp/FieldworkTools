@@ -9,6 +9,12 @@ __maintainer__ = "Manuel R. Popp"
 __email__ = "requests@cdpopp.de"
 __status__ = "Development"
 
+# Debug
+import sys
+sys.argv = ["create_area_flight.py", "m3m", "--latitude", "47.3618351", "--longitude", "8.4528181", "--width", "40", "--height", "40", "--destfile", "C:/Users/poppman/Desktop/tmp/gridtest.kmz", "--gridmode"]
+import os
+os.chdir("D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/flightplanner")
+
 # Imports---------------------------------------------------------------
 import os
 import time
@@ -23,7 +29,7 @@ from warnings import warn
 
 from config import ParameterSet, Defaults
 from mission import Mission
-from lib.functions import *
+from lib.utils import get_heading_angle
 
 # Inputs----------------------------------------------------------------
 ## Parse input arguments
@@ -63,6 +69,12 @@ parser.add_argument(
 parser.add_argument(
     "--altitude", "-alt", type = float, default = defaults.altitude,
     help = "Flight altitude. Defaults calculated based on sensor factor and GSD."
+    )
+parser.add_argument(
+    "--altitudetype", "-altt", type = str, default = defaults.altitudetype,
+    help = "Flight altitude type. Either 'rtf' (realtime follow), " +
+        "'constant' (constant altitude), or a path to a DSM (above DSM)." +
+        f"Defaults to {defaults.altitudetype}."
     )
 parser.add_argument(
     "--tosecurealt", "-tsa", type = float, default = defaults.tosecurealt,
@@ -178,8 +190,14 @@ parser.add_argument(
     help = f"LiDAR scanning mode. Defaults to {defaults.scanning_mode}."
     )
 parser.add_argument(
-    "--calibrateimu", "-cimu", type = str, action = "store_true",
+    "--calibrateimu", "-cimu", action = "store_true",
     help = f"LiDAR sensor IMU calibration."
+    )
+parser.add_argument(
+    "--imucalibrationinterval", "-imudt", type = float,
+    default = defaults.imucalibrationinterval,
+    help = "LiDAR sensor IMU calibration interval. " +
+        f"Defaults to {defaults.imucalibrationinterval}."
     )
 parser.add_argument(
     "--gridmode", "-gm", action = "store_true",
@@ -197,132 +215,11 @@ args = parser.parse_args()
 ## Create dataframe
 mission = Mission(args)
 
-## Generate template.kml
-mission.write_template_kml()
+## Create mission
+mission.make_waypoints()
+mission.add_actions()
 
-## Generate waylines.wpml
-top -= 0.5 * args.spacing
-bottom += 0.5 * args.spacing
-span = (top + 2 * args.buffer - bottom)
-n_parts = int(span // args.spacing)
-offset = (span - n_parts * args.spacing) / 2
-start = bottom - args.buffer + offset
-end = top + args.buffer
+mission.plot()
 
-wayline_gdf_utm = lines_horizontal(
-    left = left,
-    right = right,
-    start = start,
-    end = end
-)
-
-if args.gridmode:
-    wayline_gdf_utm = wayline_gdf_utm.iloc[:-1]
-    right -= 0.5 * args.spacing
-    left += 0.5 * args.spacing
-    span = (right + 2 * args.buffer - left)
-    n_parts = int(span // args.spacing)
-    offset = (span - n_parts * args.spacing) / 2
-    start = left - args.buffer + offset
-    end = right + args.buffer
-
-    wayline_gdf_utm_vertical = lines_vertical(
-        top = top,
-        bottom = bottom,
-        start = start,
-        end = end,
-        start_x = wayline_gdf_utm.get_coordinates().iloc[-1, 0]
-    )
-
-    wayline_gdf_utm = pd.concat(
-        [wayline_gdf_utm, wayline_gdf_utm_vertical], ignore_index = True
-        )
-
-# Rotate flight paths if required
-if args.plotangle != 90:
-    wayline_gdf_utm = rotate_gdf(
-        gdf = wayline_gdf_utm,
-        x_centre = x_centre, y_centre = y_centre,
-        angle = args.plotangle - 90
-    )
-
-# Convert wayline coordinates to EPSG:4326 and generate placemarks
-wayline_gdf = wayline_gdf_utm.to_crs("EPSG:4326")
-wayline_coordinates = wayline_gdf.get_coordinates()
-
-action_trigger = photo_trigger_intervals(
-    front_overlap_fraction = colapw / 100,
-    vertical_fov = get_mapping_vertical_fov(),
-    altitude = args.altitude,
-    velocity = args.flightspeed
-    )
-
-with open(
-    os.path.join(args.template_directory, "template_placemark.txt"), "r"
-    ) as file:
-    template_placemark = file.read()
-
-placemarks = ""
-
-for index, (longitude, latitude) in wayline_coordinates.iterrows():
-    if index == wayline_coordinates.shape[0] - 1:
-        heading_angle = 0
-    else:
-        heading_angle = get_heading_angle(
-            p0 = (longitude, latitude),
-            p1 = (
-                wayline_coordinates.x[index + 1],
-                wayline_coordinates.y[index + 1]
-                )
-            )
-    
-    placemark = template_placemark.format(
-        LATITUDE = np.round(latitude, 13),
-        LONGITUDE = np.round(longitude, 13),
-        INDEX = index,
-        EXECALTITUDE = args.altitude,
-        WPSPEED = args.flightspeed,
-        WPTURNMODE = args.wpturnmode,
-        WPHEADINGANGLE = heading_angle,
-        ACTIONMODE = "multipleTime" if args.imgsamplingmode == "time" \
-            else "multipleDistance",
-        ACTIONTRIGGER = action_trigger
-        )
-    
-    placemarks += placemark
-
-path_last = Point(longitude, latitude)
-
-flightroute = LineString(wayline_gdf_utm.geometry.tolist())
-total_distance = flightroute.length
-
-print(f"Total distance of flight route: {total_distance:.2f} m.")
-print(f"Estimated flight duration: {total_distance / args.flightspeed:.2f} s.")
-
-with open(
-    os.path.join(args.template_directory, "wpmz", "waylines.wpml"), "r"
-    ) as file:
-    waylines_text = file.read()
-    waylines = waylines_text.format(
-        PLACEMARKS = placemarks,
-        TOTALDIST = total_distance,
-        TOTALTIME = total_distance / args.flightspeed,
-        AUTOFLIGHTSPEED = args.flightspeed,
-        TRANSITIONSPEED = args.transitionspeed,
-        TOSECUREHEIGHT = args.tosecurealt
-        )
-
-with zipfile.ZipFile(args.destfile, "a") as zf:
-    with zf.open("wpmz/waylines.wpml", "w") as f:
-        f.write(waylines.encode("utf8"))
-
-
-from matplotlib import pyplot as plt
-
-plot_polygon = Polygon(plot_gdf_utm.geometry.tolist())
-poly_gdf = gpd.GeoDataFrame(geometry = [plot_polygon], crs = plot_gdf_utm.crs)
-ax = poly_gdf.plot(color = "none", edgecolor = "blue")
-
-wayline_gdf = gpd.GeoDataFrame(geometry = [flightroute], crs = wayline_gdf_utm.crs)
-wayline_gdf.plot(ax = ax, color = "red")
-plt.show()
+## Export mission to KMZ
+mission.export_mission()

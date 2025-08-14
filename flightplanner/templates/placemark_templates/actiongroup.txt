@@ -1,0 +1,10 @@
+        <wpml:actionGroup>
+          <wpml:actionGroupId>{ACTION_GROUP_ID}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>{START_INDEX}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>{END_INDEX}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>{MODE}</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>{ACTIONTRIGGER}</wpml:actionTriggerType>{ACTIONTRIGGERPARAM}
+          </wpml:actionTrigger>
+{ACTIONS}
+        </wpml:actionGroup>

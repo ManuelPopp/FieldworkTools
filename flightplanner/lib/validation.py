@@ -1,3 +1,7 @@
+import os
+import numpy as np
+from warnings import warn
+
 def validate_args(args):
     ## Ensure the output is a .kmz file
     if os.path.splitext(args.destfile)[1].lower() != ".kmz":

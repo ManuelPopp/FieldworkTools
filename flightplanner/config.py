@@ -2,6 +2,7 @@
 from dataclasses import dataclass, asdict, field
 import argparse
 import os
+import numpy as np
 
 # Dataclasses-----------------------------------------------------------
 @dataclass
@@ -29,10 +30,15 @@ class Config:
     scanning_mode: str = "nonRepetitive"
     imgsamplingmode: str = "distance"
     gridmode: bool = False
+    imucalibrationinterval: float = np.inf
+    waypoint_template: str = "./templates/placemark_templates/template_placemark.txt"
+    action_template: str = "./templates/placemark_templates/action.txt"
+    action_group_template: str = "./templates/placemark_templates/actiongroup.txt"
 
 @dataclass
 class Defaults(Config):
     sensor: str = "m3m"
+    altitudetype: str = "rtf"
     sensorchoices: list = field(default_factory = lambda: ["m3m", "l2"])
     template_directory: str = os.path.join(".", "templates")
 
@@ -46,7 +52,9 @@ class M3MConfig(Config):
     verticalfov: float = 48.1
     secondary_hfov: float = 84.0
     secondary_vfov: float = None  # Unknown value, set to None
-    coefficients: list = field(default_factory = lambda: [-0.0119347, 1.19347])
+    coefficients: list = field(
+        default_factory = lambda: [-0.0119347, 1.19347]
+        )
     flightspeed: float = 3.0
     template_directory: str = os.path.join(".", "templates", "m3m")
 
@@ -62,14 +70,17 @@ class L2Config(Matrice400Config):
     verticalfov: float = 75.0 # In non-repetitive mode
     secondary_hfov: float = 84.0
     secondary_vfov: float = None  # Unknown value, set to None
-    coefficients: list = field(default_factory = lambda: [-0.01098424, 1.099605])
-    flightspeed: float = 7.0
+    coefficients: list = field(
+        default_factory = lambda: [-0.01098424, 1.099605]
+        )
+    flightspeed: float = 4.0
     overlapsensor: str = "LS"
     template_directory: str = os.path.join(".", "templates", "l2")
     lidar_returns: int = 5
     sampling_rate: int = 240000
     scanning_mode: str = "nonRepetitive"
     gridmode: bool = False # Else, it cannot be overwritten by the user
+    imucalibrationinterval: float = 200.
 
 # Key dictionary--------------------------------------------------------
 keydict = {
@@ -80,6 +91,11 @@ keydict = {
         3: "tripleReturn",
         4: "quadrupleReturn",
         5: "quintupleReturn"
+    },
+    "altitude_mode": {
+        "rtf": "realTimeFollowSurface",
+        "constant": "relativeToStartPoint",
+        "dsm": "WGS84"
     }
 }
 

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.6">
+  <Document>
+   <wpml:missionConfig>
+      <wpml:flyToWaylineMode>safely</wpml:flyToWaylineMode>
+      <wpml:finishAction>noAction</wpml:finishAction>
+      <wpml:exitOnRCLost>executeLostAction</wpml:exitOnRCLost>
+      <wpml:executeRCLostAction>goBack</wpml:executeRCLostAction>
+      <wpml:takeOffSecurityHeight>{TOSECUREHEIGHT}</wpml:takeOffSecurityHeight>
+      <wpml:globalTransitionalSpeed>{TRANSITIONSPEED}</wpml:globalTransitionalSpeed>
+      <wpml:droneInfo>
+         <wpml:droneEnumValue>103</wpml:droneEnumValue>
+         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
+      </wpml:droneInfo>
+      <wpml:payloadInfo>
+         <wpml:payloadEnumValue>84</wpml:payloadEnumValue>
+         <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+      </wpml:payloadInfo>
+   </wpml:missionConfig>
+   <Folder>
+      <wpml:templateId>0</wpml:templateId>
+      <wpml:executeHeightMode>{ALTITUDEMODE}</wpml:executeHeightMode>
+      <wpml:waylineId>0</wpml:waylineId>
+      <wpml:autoFlightSpeed>{AUTOFLIGHTSPEED}</wpml:autoFlightSpeed>
+      <wpml:distance>{TOTALDIST}</wpml:distance>
+      <wpml:duration>{TOTALTIME}</wpml:duration>
+{PLACEMARKS}
+      </Folder>
+   </Document>
+</kml>

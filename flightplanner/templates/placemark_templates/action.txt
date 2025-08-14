@@ -1,0 +1,7 @@
+        <wpml:action>
+            <wpml:actionId>{ACTION_ID}</wpml:actionId>
+            <wpml:actionActuatorFunc>{ACTION}</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+{ACTION_PARAMS}
+            </wpml:actionActuatorFuncParam>
+        </wpml:action>
