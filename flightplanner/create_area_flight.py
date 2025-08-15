@@ -11,7 +11,18 @@ __status__ = "Development"
 
 # Debug
 import sys
-sys.argv = ["create_area_flight.py", "m3m", "--latitude", "47.3618351", "--longitude", "8.4528181", "--width", "40", "--height", "40", "--destfile", "C:/Users/poppman/Desktop/tmp/gridtest.kmz", "--gridmode"]
+sys.argv = [
+    "create_area_flight.py", "l2",
+    "--latitude", "47.3618351", "--longitude", "8.4528181",
+    "--width", "50", "--height", "50",
+    "--destfile", "C:/Users/poppman/Desktop/tmp/linetestL2.kmz",
+    "--plotangle", "20",
+    "--gridmode", "lines",
+    "--calibrateimu",
+    "--altitudetype", "dsm",
+    "--dsm_path", "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/org/fieldwork/2025_06_WSL/dem/swissalti3d_Rameren_lonlat.tif",
+    "--dsm_follow_segment_length", "5"
+    ]
 import os
 os.chdir("D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/flightplanner")
 
@@ -73,8 +84,23 @@ parser.add_argument(
 parser.add_argument(
     "--altitudetype", "-altt", type = str, default = defaults.altitudetype,
     help = "Flight altitude type. Either 'rtf' (realtime follow), " +
-        "'constant' (constant altitude), or a path to a DSM (above DSM)." +
+        "'constant' (constant altitude), or a DSM (above DSM)." +
         f"Defaults to {defaults.altitudetype}."
+    )
+parser.add_argument(
+    "--dsm_path", "-dsm", type = str,
+    help = "Path to the DSM file (required when altitude type is 'dsm')."
+    )
+parser.add_argument(
+    "--dsm_follow_segment_length", "-dsmseg", type = float,
+    default = defaults.dsm_follow_segment_length,
+    help = "Maximum segment length for DSM follow in m. " +
+        f"Defaults to {defaults.dsm_follow_segment_length}."
+    )
+parser.add_argument(
+    "--safetybuffer", "-sb", type = float, default = defaults.safetybuffer,
+    help = "Horizontal safety buffer for DSM follow in m. " +\
+        f"Defaults to {defaults.safetybuffer}."
     )
 parser.add_argument(
     "--tosecurealt", "-tsa", type = float, default = defaults.tosecurealt,
@@ -200,12 +226,13 @@ parser.add_argument(
         f"Defaults to {defaults.imucalibrationinterval}."
     )
 parser.add_argument(
-    "--gridmode", "-gm", action = "store_true",
-    help = "Use grid mode for the flight pattern. " +
-        "This will create a grid of flight paths instead of parallel lines."
+    "--gridmode", "-gm", type = str, default = defaults.gridmode,
+    help = "Flight pattern type (lines: 'lines', grid: 'simple'," +
+    f" or double grid: 'double'). Defaults to {defaults.gridmode}"
 )
 parser.add_argument(
-    "--template_directory", type = str, default = defaults.template_directory,
+    "--template_directory", type = str,
+    default = defaults.template_directory,
     help = argparse.SUPPRESS
     )
 
@@ -218,7 +245,10 @@ mission = Mission(args)
 ## Create mission
 mission.make_waypoints()
 mission.add_actions()
-
+if mission.args.calibrateimu:
+    mission.add_imu_calibration_groups()
+if mission.args.altitudetype == "dsm":
+    mission.waypoint_altitudes_from_dsm()
 mission.plot()
 
 ## Export mission to KMZ

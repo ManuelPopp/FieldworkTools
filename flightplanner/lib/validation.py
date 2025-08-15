@@ -1,3 +1,4 @@
+from html import parser
 import os
 import numpy as np
 from warnings import warn
@@ -68,7 +69,10 @@ def validate_args(args):
 
     if args.transitionspeed == int(args.transitionspeed):
         args.transitionspeed = int(args.transitionspeed)
-
+    
+    if args.altitudetype == "dsm" and not args.dsm_path:
+        parser.error("--dsm_path is required when altitude type is 'dsm'")
+    
     ## Print input settings
     print("== Settings ==")
     for arg, value in args.__dict__.items():

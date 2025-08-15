@@ -1,7 +1,9 @@
 from warnings import warn
-from lib.geo import round_coords, coordinates_to_utm
+from lib.geo import get_utm_crs, round_coords, coordinates_to_utm
 from lib.actions import Action
-from lib.actiongroups import ActionGroup, compile_action_group
+from lib.actiongroups import (
+    ActionGroup, AircraftCalibrationGroup, compile_action_group
+)
 from lib.utils import get_heading_angle
 
 class Waypoint():
@@ -15,7 +17,7 @@ class Waypoint():
             mission = None
             ):
         self.coordinates = round_coords(coordinates)
-        self.utm_crs = utm_crs
+        self._utm_crs = utm_crs
         self.altitude = altitude if altitude is None else round(altitude, 1)
         self.velocity = velocity if velocity is None else round(velocity, 1)
         self.turn_mode = turn_mode
@@ -26,6 +28,7 @@ class Waypoint():
         self.heading_angle_enable = heading_angle_enable
         self.use_straight = use_straight
         self.wp_type = wp_type
+        self.perform_imu_calibration = False
         self.actions = [] if actions is None else actions
         self.mission = mission
     
@@ -48,7 +51,16 @@ class Waypoint():
             except Exception as e:
                 warn(f"Could not determine heading angle: {e}")
         return self._heading_angle
-
+    
+    @property
+    def utm_crs(self):
+        if self._utm_crs is None:
+            if self.mission is None:
+                self._utm_crs = get_utm_crs(self.coordinates)
+            else:
+                self._utm_crs = self.mission.local_crs
+        return self._utm_crs
+    
     @property
     def coordinates_utm(self):
         return coordinates_to_utm(
@@ -112,6 +124,17 @@ class Waypoint():
                 f"Expected an ActionGroup subclass, got {t}"
             )
         self.actions.append(action_group(waypoint = self, **kwargs))
+    
+    def add_calibration(self):
+        if self.has_actiongroup:
+            for action in self.actions:
+                if hasattr(action, "add_calibration"):
+                    action.add_calibration()
+                    self.perform_imu_calibration = True
+                    break
+        if not self.perform_imu_calibration:
+            self.actions.append(AircraftCalibrationGroup(self))
+            self.perform_imu_calibration = True
     
     def set_altitude(self, altitude):
         self.altitude = round(altitude, 1)

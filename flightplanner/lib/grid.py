@@ -200,14 +200,13 @@ def simple_grid(
         top, bottom, left, right, x_centre, y_centre, spacing, buffer,
         plotangle, gridmode, local_crs
         ):
-    top -= 0.5 * spacing
-    bottom += 0.5 * spacing
-    span = (top + 2 * buffer - bottom)
+    top_shrunk = top - 0.5 * spacing
+    bottom_shrunk = bottom + 0.5 * spacing
+    span = (top_shrunk + 2 * buffer - bottom_shrunk)
     n_parts = int(span // spacing)
     offset = (span - n_parts * spacing) / 2
-    start = bottom - buffer + offset
-    end = top + buffer
-    
+    start = bottom_shrunk - buffer + offset
+    end = top_shrunk + buffer
     centre_df = pd.DataFrame({
         "ID": [1],
         "y": [y_centre],
@@ -235,15 +234,14 @@ def simple_grid(
         local_crs = local_crs
     )
 
-    if gridmode:
-        wayline_gdf_utm = wayline_gdf_utm.iloc[:-1]
-        right -= 0.5 * spacing
-        left += 0.5 * spacing
-        span = (right + 2 * buffer - left)
+    if gridmode == "simple":
+        right_shrunk = right - 0.5 * spacing
+        left_shrunk = left + 0.5 * spacing
+        span = (right_shrunk + 2 * buffer - left_shrunk)
         n_parts = int(span // spacing)
         offset = (span - n_parts * spacing) / 2
-        start = left - buffer + offset
-        end = right + buffer
+        start = left_shrunk - buffer + offset
+        end = right_shrunk + buffer
 
         wayline_gdf_utm_vertical = lines_vertical(
             top = top,

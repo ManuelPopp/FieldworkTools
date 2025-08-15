@@ -66,6 +66,19 @@ class Action():
 
 #------------------------------------------------------------------------------
 ## Specific action classes
+class AircraftCalibration(Action):
+    def __init__(self, action_group, **kwargs):
+        super().__init__(action_group)
+        self.name = "aircraftCalibration"
+        self.default = self.params = {
+            "calibrationHeading" : int(0),
+            "calibrationTimes" : int(3),
+            "calibrationDistance" : int(30)
+            }
+        
+        self.params.update(kwargs)
+        self.check()
+
 class Focus(Action):
     def __init__(self, action_group, **kwargs):
         super().__init__(action_group)
@@ -202,6 +215,81 @@ class RecordPointCloud(Action):
             recordPointCloudOperate = action,
         )
 
+class StartContinuousShoot(Action):
+    def __init__(self, action_group, **kwargs):
+        super().__init__(action_group)
+        self.name = "startContinuousShooting"
+        self.default = self.params = {
+            "payloadPositionIndex" : int(0),
+            "useGlobalPayloadLensIndex" : int(0),
+            "payloadLensIndex" : str("visable,narrow_band")
+            }
+        self.params.update(kwargs)
+        self.check()
+    
+    @classmethod
+    def new(cls, action_group, payloadLensIndex):
+        return cls(
+            action_group = action_group,
+            payloadLensIndex = payloadLensIndex
+        )
+
+class StopContinuousShoot(Action):
+    def __init__(self, action_group, **kwargs):
+        super().__init__(action_group)
+        self.name = "stopContinuousShooting"
+        self.default = self.params = {
+            "payloadPositionIndex" : int(0),
+            "payloadLensIndex" : str("visable,narrow_band")
+            }
+        self.params.update(kwargs)
+        self.check()
+    
+    @classmethod
+    def new(cls, action_group, payloadLensIndex):
+        return cls(
+            action_group = action_group,
+            payloadLensIndex = payloadLensIndex
+        )
+
+class StartTimeLapse(Action):
+    def __init__(self, action_group, **kwargs):
+        super().__init__(action_group)
+        self.name = "startTimeLapse"
+        self.default = self.params = {
+            "payloadPositionIndex" : int(0),
+            "useGlobalPayloadLensIndex" : int(0),
+            "payloadLensIndex" : str("visable,narrow_band"),
+            "minShootInterval" : float(1.0)
+            }
+        self.params.update(kwargs)
+        self.check()
+    
+    @classmethod
+    def new(cls, action_group, payloadLensIndex):
+        return cls(
+            action_group = action_group,
+            payloadLensIndex = payloadLensIndex
+        )
+
+class StopTimeLapse(Action):
+    def __init__(self, action_group, **kwargs):
+        super().__init__(action_group)
+        self.name = "stopTimeLapse"
+        self.default = self.params = {
+            "payloadPositionIndex" : int(0),
+            "payloadLensIndex" : str("visable,narrow_band")
+            }
+        self.params.update(kwargs)
+        self.check()
+    
+    @classmethod
+    def new(cls, action_group, payloadLensIndex):
+        return cls(
+            action_group = action_group,
+            payloadLensIndex = payloadLensIndex
+        )
+
 class Yaw(Action):
     def __init__(self, action_group, **kwargs):
         super().__init__(action_group)
@@ -257,78 +345,3 @@ class Zoom(Action):
             action_group = action_group,
             focalFactor = factor
             )
-
-class StartTimeLapse(Action):
-    def __init__(self, action_group, **kwargs):
-        super().__init__(action_group)
-        self.name = "startTimeLapse"
-        self.default = self.params = {
-            "payloadPositionIndex" : int(0),
-            "useGlobalPayloadLensIndex" : int(0),
-            "payloadLensIndex" : str("visable,narrow_band"),
-            "minShootInterval" : float(1.0)
-            }
-        self.params.update(kwargs)
-        self.check()
-    
-    @classmethod
-    def new(cls, action_group, payloadLensIndex):
-        return cls(
-            action_group = action_group,
-            payloadLensIndex = payloadLensIndex
-        )
-
-class StopTimeLapse(Action):
-    def __init__(self, action_group, **kwargs):
-        super().__init__(action_group)
-        self.name = "stopTimeLapse"
-        self.default = self.params = {
-            "payloadPositionIndex" : int(0),
-            "payloadLensIndex" : str("visable,narrow_band")
-            }
-        self.params.update(kwargs)
-        self.check()
-    
-    @classmethod
-    def new(cls, action_group, payloadLensIndex):
-        return cls(
-            action_group = action_group,
-            payloadLensIndex = payloadLensIndex
-        )
-
-class StartContinuousShoot(Action):
-    def __init__(self, action_group, **kwargs):
-        super().__init__(action_group)
-        self.name = "startContinuousShooting"
-        self.default = self.params = {
-            "payloadPositionIndex" : int(0),
-            "useGlobalPayloadLensIndex" : int(0),
-            "payloadLensIndex" : str("visable,narrow_band")
-            }
-        self.params.update(kwargs)
-        self.check()
-    
-    @classmethod
-    def new(cls, action_group, payloadLensIndex):
-        return cls(
-            action_group = action_group,
-            payloadLensIndex = payloadLensIndex
-        )
-
-class StopContinuousShoot(Action):
-    def __init__(self, action_group, **kwargs):
-        super().__init__(action_group)
-        self.name = "stopContinuousShooting"
-        self.default = self.params = {
-            "payloadPositionIndex" : int(0),
-            "payloadLensIndex" : str("visable,narrow_band")
-            }
-        self.params.update(kwargs)
-        self.check()
-    
-    @classmethod
-    def new(cls, action_group, payloadLensIndex):
-        return cls(
-            action_group = action_group,
-            payloadLensIndex = payloadLensIndex
-        )

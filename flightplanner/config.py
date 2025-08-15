@@ -41,6 +41,9 @@ class Defaults(Config):
     altitudetype: str = "rtf"
     sensorchoices: list = field(default_factory = lambda: ["m3m", "l2"])
     template_directory: str = os.path.join(".", "templates")
+    gridmode: str = "lines"
+    safetybuffer: float = 10.0
+    dsm_follow_segment_length: float = 20.0
 
 @dataclass
 class M3MConfig(Config):

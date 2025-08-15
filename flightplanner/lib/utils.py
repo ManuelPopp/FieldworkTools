@@ -24,14 +24,14 @@ def get_heading_angle(p0, p1):
     """
     dx = p1.coordinates_utm[0] - p0.coordinates_utm[0]
     dy = p1.coordinates_utm[1] - p0.coordinates_utm[1]
-    phi = np.degrees(np.arctan2(dx, dy))
+    phi = round(np.degrees(np.arctan2(dx, dy)), 1)
     
     if phi > 180:
         phi -= 360
-    elif phi < -180:
+    elif phi <= -180:
         phi += 360
     
-    return round(phi, 1)
+    return phi
 
 # Experimental, not working---------------------------------------------
 def get_overlaps(

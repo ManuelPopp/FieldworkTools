@@ -11,6 +11,7 @@ __status__ = "Development"
 
 # Imports---------------------------------------------------------------
 import os
+import copy
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -19,17 +20,23 @@ from warnings import warn
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 
-from lib import waypoints
 from lib.utils import get_heading_angle
 from lib.io import write_template_kml, write_wayline_wpml
 from lib.validation import validate_args
 from lib.waypoints import Waypoint
 from lib.grid import simple_grid, rotate_gdf
-from lib.geo import waypoint_distance, segment_duration, segment_altitude
+from lib.geo import (
+    waypoint_distance, segment_duration, waypoint_altitude, segment_altitude
+)
+from lib.insert import interpolate_waypoints
 from lib.actiongroups import (
     StartNadirMSMapping, StopNadirMSMapping,
     PrepareObliqueMSMapping,
-    StartObliqueMSMapping, StopObliqueMSMapping
+    StartObliqueMSMapping, StopObliqueMSMapping,
+    StartRecordPointCloud, StopRecordPointCloud,
+    StartLiDARMapping,
+    PrepareObliqueLiDARMapping,
+    StartObliqueLiDARMapping, StopObliqueLiDARMapping
     )
 
 from config import Config
@@ -58,7 +65,7 @@ class Mission():
         if self.args.altitudetype.lower() == "rtf":
             return os.path.join(dir_main, "agl_rtf")
         if self.args.altitudetype.lower() == "dsm":
-            return os.path.join(dir_main, "agl_dsm")
+            return os.path.join(dir_main, "agl_dem")
         raise NotImplementedError(
             f"Altitude type '{self.args.altitudetype}' not implemented."
         )
@@ -87,7 +94,8 @@ class Mission():
             return "realTimeFollowSurface"
         if self.args.altitudetype == "constant":
             return "relativeToStartPoint"
-        return "WGS84"
+        if self.args.altitudetype == "dsm":
+            return "WGS84"
     
     # Input validation--------------------------------------------------
     def validate_args(self):
@@ -203,15 +211,43 @@ class Mission():
             )
     
     def add_actions(self):
-        self.waypoints[0].add_action_group(StartNadirMSMapping, action_trigger_param = 7.7)
-        self.waypoints[0].set_turning_mode("toPointAndStopWithDiscontinuityCurvature")
+        if len(self.waypoints) < 2:
+            raise ValueError(
+                "At least two waypoints are required to add actions." +
+                f" Found {len(self.waypoints)}."
+                )
+        
+        if self.args.sensor == "m3m":
+            self._default_ms_mapping()
+        elif self.args.sensor == "l2":
+            self._default_lidar_mapping()
+
+    def _default_ms_mapping(self):
+        self.waypoints[0].add_action_group(
+            StartNadirMSMapping, action_trigger_param = 7.7
+            )
         self.waypoints[-3].add_action_group(StopNadirMSMapping)
-        self.waypoints[-3].set_turning_mode("toPointAndStopWithDiscontinuityCurvature")
         self.waypoints[-2].add_action_group(PrepareObliqueMSMapping)
-        self.waypoints[-2].add_action_group(StartObliqueMSMapping, action_trigger_param = 7.7)
-        self.waypoints[-2].set_turning_mode("toPointAndStopWithDiscontinuityCurvature")
+        self.waypoints[-2].add_action_group(
+            StartObliqueMSMapping, action_trigger_param = 7.7
+            )
         self.waypoints[-1].add_action_group(StopObliqueMSMapping)
-        self.waypoints[-1].set_turning_mode("toPointAndStopWithDiscontinuityCurvature")
+        for i in [0, -3, -2, -1]:
+            self.waypoints[i].set_turning_mode(
+                "toPointAndStopWithDiscontinuityCurvature"
+                )
+    
+    def _default_lidar_mapping(self):
+        self.waypoints[0].add_action_group(StartRecordPointCloud)
+        self.waypoints[0].add_action_group(
+            StartLiDARMapping, action_trigger_param = 18.6
+            )
+        self.waypoints[-3].add_action_group(StopRecordPointCloud)
+        self.waypoints[-2].add_action_group(PrepareObliqueLiDARMapping)
+        self.waypoints[-2].add_action_group(
+            StartObliqueLiDARMapping, action_trigger_param = 18.6
+            )
+        self.waypoints[-2].add_action_group(StopObliqueLiDARMapping)
     
     def waypoint_altitudes_from_dsm(self):
         if self.args.altitudetype.lower() == "rtf":
@@ -229,13 +265,30 @@ class Mission():
             raise ValueError("DSM file not found.")
         
         if len(self.waypoints) < 2:
-            raise ValueError("At least two waypoints are required.")
-        
+            raise ValueError(
+                "At least two waypoints are required to calculate " +
+                f"altitudes. Found {len(self.waypoints)}."
+                )
+        # First, get altitude for existing waypoints
+        for wpt in self.waypoints:
+            altitude = waypoint_altitude(
+                dsm_path = self.args.dsm_path,
+                wpt = wpt,
+                altitude_agl = self.args.altitude
+            )
+            wpt.set_altitude(altitude)
+        # Split with existing altitude information assuming straight
+        # transect lines
+        self.split_waylines(
+            by = "distance", dmax = self.args.dsm_follow_segment_length
+            )
+        # Get new altitudes based on smaller segments
         for wp0, wp1 in zip(self.waypoints[:-1], self.waypoints[1:]):
             altitude = segment_altitude(
-                dsm_path = self.args.altitudetype,
-                waypoints = [wp0, wp1],
-                altitude_agl = self.args.altitude
+                dsm_path = self.args.dsm_path,
+                wpt0 = wp0, wpt1 = wp1,
+                altitude_agl = self.args.altitude,
+                horizontal_safety_buffer_m = self.args.safetybuffer
             )
             wp0.set_altitude(altitude)
     
@@ -248,35 +301,55 @@ class Mission():
 
     def add_imu_calibration_groups(self):
         cumulative_time = self.args.imucalibrationinterval
+        self.split_waylines(
+            by = "time", tmax = self.args.imucalibrationinterval
+            )
         
         new_waypoints = []
         for wp0, wp1 in zip(self.waypoints[:-1], self.waypoints[1:]):
             if cumulative_time >= self.args.imucalibrationinterval:
-                raise NotImplementedError("IMU calibration group creation not implemented.")
-                new_waypoints.extend(IMUCalibrationGroup(wp0))
+                wp0.add_calibration()
                 cumulative_time = 0
             
-            dt = segment_duration(wp0, wp1)
-            if dt >= self.args.imucalibrationinterval:
-                raise NotImplementedError("Long segment chopping not implemented.")
-                wpm = split_segment(wp0, wp1)
-                new_waypoints.extend(IMUCalibrationGroup(wpm))
-            cumulative_time += dt
+            new_waypoints.append(wp0)
+            cumulative_time += segment_duration(wp0, wp1)
         
+        new_waypoints.append(wp1)
         self.waypoints = new_waypoints
     
     def make_waypoints(self):
-        if self.args.gridmode:
+        warn("Clearing existing waypoints.")
+        self.waypoints.clear()
+
+        if self.args.gridmode in ["lines", "simple"]:
             self._make_simple_grid()
             self._grid_to_waypoints()
         
-        if self.args.altitudetype.lower() not in ["rtf", "constant"]:
-            self.waypoint_altitudes_from_dsm()
-        
         self.add_heading_angles()
-
-        if self.args.calibrateimu:
-            self.add_imu_calibration_points()
+    
+    # Insert waypoints--------------------------------------------------
+    def split_waylines(
+            self, by = "time", tmax = None, dmax = None, **kwargs
+            ):
+        if by not in ["time", "distance"]:
+            raise ValueError(f"Invalid split method: {by}")
+        
+        new_waypoints = []
+        for wp0, wp1 in zip(self.waypoints[:-1], self.waypoints[1:]):
+            new_waypoints.append(wp0)
+            if by == "time":
+                dt = segment_duration(wp0, wp1)
+                num_wpts = max(0, int(dt // tmax))
+            if by == "distance":
+                dx = waypoint_distance(wp0, wp1)
+                num_wpts = max(0, int(dx // dmax))
+            if num_wpts > 0:
+                new_wpts = interpolate_waypoints(wp0, wp1, num_wpts)
+                new_waypoints.extend(new_wpts)
+        
+        new_waypoints.append(wp1)
+        self.waypoints.clear()
+        self.waypoints = new_waypoints
     
     # Visualisation-----------------------------------------------------
     def plot(self):
@@ -289,7 +362,8 @@ class Mission():
                 "geometry": Point(wp.coordinates),
                 "altitude": wp.altitude,
                 "velocity": wp.velocity,
-                "has_actiongroup": wp.has_actiongroup
+                "has_actiongroup": wp.has_actiongroup,
+                "perform_imu_calibration": wp.perform_imu_calibration
             }
             for wp in self.waypoints
             ]
@@ -342,14 +416,22 @@ class Mission():
         # Altitude points with shared scale
         vmin = gdf["altitude"].min()
         vmax = gdf["altitude"].max()
-        gdf[gdf.has_actiongroup].plot(
-            ax = ax, column = "altitude", cmap = "plasma",
-            vmin = vmin, vmax = vmax, marker = "s", markersize = 50
-        )
-        gdf[~gdf.has_actiongroup].plot(
-            ax = ax, column = "altitude", cmap = "plasma",
-            vmin = vmin, vmax = vmax, marker = "o", markersize = 50
-        )
+        if not gdf[gdf.has_actiongroup].empty:
+            gdf[gdf.has_actiongroup].plot(
+                ax = ax, column = "altitude", cmap = "plasma",
+                vmin = vmin, vmax = vmax, marker = "s", markersize = 50
+            )
+        if not gdf[~gdf.has_actiongroup].empty:
+            gdf[~gdf.has_actiongroup].plot(
+                ax = ax, column = "altitude", cmap = "plasma",
+                vmin = vmin, vmax = vmax, marker = "o", markersize = 50
+            )
+        if not gdf[gdf.perform_imu_calibration].empty:
+            gdf[gdf.perform_imu_calibration].plot(
+                ax = ax,
+                facecolors = "none", edgecolor = "red",
+                vmin = vmin, vmax = vmax, marker = "o", markersize = 150
+            )
         sm_alt = plt.cm.ScalarMappable(
             cmap = "plasma",
             norm = plt.Normalize(vmin = vmin, vmax = vmax)
