@@ -336,8 +336,6 @@ class Mission():
         if self.args.gridmode in ["lines", "simple"]:
             self._make_simple_grid()
             self._grid_to_waypoints()
-        
-        self.add_heading_angles()
     
     # Insert waypoints--------------------------------------------------
     def split_waylines(
@@ -483,6 +481,8 @@ class Mission():
             raise ValueError(
                 "Plot coordinates not set. Call set_plot() first."
                 )
+        self.add_heading_angles()
+        
         # Generate DSM path and copy DSM if altitude type is DSM
         if self.args.altitudetype.lower() == "dsm":
             self.dsm_out = "/".join([

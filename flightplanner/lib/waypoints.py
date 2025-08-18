@@ -175,8 +175,7 @@ class Waypoint():
                 EXECALTITUDE = self.altitude,
                 WPSPEED = self.velocity,
                 HEADINGMODE = self.heading_mode,
-                HEADINGANGLE = 0 if self.heading_mode == "followWayline" \
-                    else self.heading_angle,
+                HEADINGANGLE = self.heading_angle,
                 TURNMODE = self.turn_mode,
                 TURN_DAMPING_DISTANCE = self.turn_damping_dist,
                 USE_STRAIGHT_LINES = int(self.use_straight),

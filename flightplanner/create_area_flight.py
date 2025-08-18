@@ -14,15 +14,16 @@ if False:
     import sys
     sys.argv = [
         "create_area_flight.py", "l2",
-        "--latitude", "47.3618351", "--longitude", "8.4528181",
+        "--latitude", "47.362158", "--longitude", "8.4562517",
         "--width", "50", "--height", "50",
         "--destfile", "C:/Users/poppman/Desktop/tmp/linetestL2.kmz",
         "--plotangle", "20",
-        "--gridmode", "lines",
+        "--altitude", "60",
+        "--gridmode", "simple",
         "--calibrateimu",
-        "--altitudetype", "dsm",
+        "--altitudetype", "rtf",
         "--dsm_path", "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/org/fieldwork/2025_06_WSL/dem/swissalti3d_Rameren_lonlat.tif",
-        "--dsm_follow_segment_length", "5"
+        "--dsm_follow_segment_length", "10"
         ]
     import os
     os.chdir("D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/flightplanner")
