@@ -10,21 +10,22 @@ __email__ = "requests@cdpopp.de"
 __status__ = "Development"
 
 # Debug
-import sys
-sys.argv = [
-    "create_area_flight.py", "l2",
-    "--latitude", "47.3618351", "--longitude", "8.4528181",
-    "--width", "50", "--height", "50",
-    "--destfile", "C:/Users/poppman/Desktop/tmp/linetestL2.kmz",
-    "--plotangle", "20",
-    "--gridmode", "lines",
-    "--calibrateimu",
-    "--altitudetype", "dsm",
-    "--dsm_path", "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/org/fieldwork/2025_06_WSL/dem/swissalti3d_Rameren_lonlat.tif",
-    "--dsm_follow_segment_length", "5"
-    ]
-import os
-os.chdir("D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/flightplanner")
+if False:
+    import sys
+    sys.argv = [
+        "create_area_flight.py", "l2",
+        "--latitude", "47.3618351", "--longitude", "8.4528181",
+        "--width", "50", "--height", "50",
+        "--destfile", "C:/Users/poppman/Desktop/tmp/linetestL2.kmz",
+        "--plotangle", "20",
+        "--gridmode", "lines",
+        "--calibrateimu",
+        "--altitudetype", "dsm",
+        "--dsm_path", "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/org/fieldwork/2025_06_WSL/dem/swissalti3d_Rameren_lonlat.tif",
+        "--dsm_follow_segment_length", "5"
+        ]
+    import os
+    os.chdir("D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/flightplanner")
 
 # Imports---------------------------------------------------------------
 import os
@@ -239,17 +240,18 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Body------------------------------------------------------------------
-## Create dataframe
-mission = Mission(args)
+if __name__ == "__main__":
+    ## Create dataframe
+    mission = Mission(args)
 
-## Create mission
-mission.make_waypoints()
-mission.add_actions()
-if mission.args.calibrateimu:
-    mission.add_imu_calibration_groups()
-if mission.args.altitudetype == "dsm":
-    mission.waypoint_altitudes_from_dsm()
-mission.plot()
+    ## Create mission
+    mission.make_waypoints()
+    mission.add_actions()
+    if mission.args.calibrateimu:
+        mission.add_imu_calibration_groups()
+    if mission.args.altitudetype == "dsm":
+        mission.waypoint_altitudes_from_dsm()
+    mission.plot()
 
-## Export mission to KMZ
-mission.export_mission()
+    ## Export mission to KMZ
+    mission.export_mission()

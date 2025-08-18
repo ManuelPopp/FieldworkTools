@@ -21,7 +21,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 
 from lib.utils import get_heading_angle
-from lib.io import write_template_kml, write_wayline_wpml
+from lib.io import write_template_kml, write_wayline_wpml, copy_dsm
 from lib.validation import validate_args
 from lib.waypoints import Waypoint
 from lib.grid import simple_grid, rotate_gdf
@@ -58,6 +58,9 @@ class Mission():
 
         ## Initiate waypoint list
         self.waypoints = []
+
+        # Relative DSM output directory
+        self.dsm_out = None
     
     @property
     def template_kml_directory(self):
@@ -181,6 +184,11 @@ class Mission():
             gridmode = self.args.gridmode
         )
         from shapely.geometry import Point
+        if grid.empty:
+            raise ValueError(
+                "No grid points were generated. " +
+                "Check input geometry and parameters."
+                )
         last_point = Point(grid.iloc[-1,].x, grid.iloc[-1,].y)
         corner_idx = self.plot_gdf.distance(last_point).idxmin()
         x, y = self.plot_gdf.get_coordinates().iloc[corner_idx]
@@ -293,6 +301,10 @@ class Mission():
             wp0.set_altitude(altitude)
     
     def add_heading_angles(self):
+        if len(self.waypoints) < 2:
+            raise ValueError(
+                "At least two waypoints are required to calculate heading angles."
+                )
         for wp0, wp1 in zip(self.waypoints[:-1], self.waypoints[1:]):
             theta = get_heading_angle(wp0, wp1)
             wp0.set_heading_angle(theta)
@@ -471,6 +483,17 @@ class Mission():
             raise ValueError(
                 "Plot coordinates not set. Call set_plot() first."
                 )
+        # Generate DSM path and copy DSM if altitude type is DSM
+        if self.args.altitudetype.lower() == "dsm":
+            self.dsm_out = "/".join([
+                "wpmz", "res", "dsm",
+                os.path.basename(self.args.dsm_path)
+                ])
+            copy_dsm(
+                src = self.args.dsm_path, dst = self.args.destfile,
+                rel_path = self.dsm_out
+                )
+        
         # Write template.kml file
         write_template_kml(
             horizontalfov = self.args.horizontalfov,
@@ -492,8 +515,10 @@ class Mission():
             sampling_rate = self.args.sampling_rate,
             scanning_mode = self.args.scanning_mode,
             calibrateimu = self.args.calibrateimu,
-            destfile = self.args.destfile
+            destfile = self.args.destfile,
+            dsm_path = self.dsm_out
             )
+        
         # Write wayline.wpml file
         write_wayline_wpml(
             template_directory = self.template_kml_directory,

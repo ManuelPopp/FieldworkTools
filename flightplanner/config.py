@@ -29,7 +29,6 @@ class Config:
     sampling_rate: int = 240000
     scanning_mode: str = "nonRepetitive"
     imgsamplingmode: str = "distance"
-    gridmode: bool = False
     imucalibrationinterval: float = np.inf
     waypoint_template: str = "./templates/placemark_templates/template_placemark.txt"
     action_template: str = "./templates/placemark_templates/action.txt"
