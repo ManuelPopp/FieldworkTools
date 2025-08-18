@@ -14,8 +14,9 @@ import platform
 from qgis.PyQt.QtCore import QProcess
 from qgis.core import (
     QgsProcessingAlgorithm, QgsProcessingParameterPoint,
+    QgsProcessingParameterBoolean,
     QgsProcessingParameterString, QgsProcessingParameterNumber,
-    QgsProcessingParameterEnum,
+    QgsProcessingParameterEnum, QgsProcessingParameterRasterLayer,
     QgsProcessingParameterFolderDestination, QgsProcessingParameterDefinition,
     QgsCoordinateTransform, QgsCoordinateReferenceSystem,
     QgsGeometry, QgsDistanceArea, QgsBearingUtils,
@@ -27,7 +28,19 @@ import subprocess
 script_dir = "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/flightplanner"
 script_name = "create_area_flight.py"
 defaultname = "SamplingPlot"
-sensor_options = ["m3m", "l2"]
+
+sensor_options = ["Mavic M3M", "Zenmuse L2"]
+sensor_options_short = ["m3m", "l2"]
+
+altitude_options = [
+    "AGL: Real time terrain follow",
+    "AGL: DSM follow",
+    "Constant"
+    ]
+altitude_options_short = ["rtf", "dsm", "constant"]
+
+grid_options = ["Lines", "Simple grid", "Double grid"]
+grid_options_short = ["lines", "simple", "double"]
 
 # Functions
 def get_unique_filename(folder, base = defaultname, ext = ".kmz"):
@@ -45,6 +58,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
     OUTPUT = "OUTPUT"
     FILENAME = "FILENAME"
     SENSOR = "SENSOR"
+    ALTTYPE = "ALTTYPE"
+    GRIDMODE = "GRIDMODE"
+    CALIBIMU = "CALIBIMU"
     
     def initAlgorithm(self, config = None):
         self.addParameter(
@@ -71,7 +87,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterString(
                 self.FILENAME,
-                "Output filename (optional – auto-generated if empty)",
+                "Output filename (auto-generated if empty)",
                 defaultValue = "",
                 optional = True
             )
@@ -81,14 +97,37 @@ class CreateFlightplan(QgsProcessingAlgorithm):
                 self.SENSOR,
                 "Sensor model",
                 options = sensor_options,
-                defaultValue = "m3m"
+                defaultValue = sensor_options[0]
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterEnum(
+                self.ALTTYPE,
+                "Altitude type",
+                options = altitude_options,
+                defaultValue = altitude_options[0]
             )
         )
         
+        self.addParameter(
+            QgsProcessingParameterEnum(
+                self.GRIDMODE,
+                "Flight pattern type",
+                options = grid_options,
+                defaultValue = grid_options[0]
+            )
+        )
+        calibimu_param = QgsProcessingParameterBoolean(
+            self.CALIBIMU,
+            "Calibrate IMU",
+            defaultValue = False
+        )
+        self.addParameter(calibimu_param)
+        
         # Advanced parameters
         self.GSD = "GSD"
-        self.SENSORFACTOR = "SENSORFACTOR"
         self.ALTITUDE = "ALTITUDE"
+        self.DSM = "DSM"
         self.TOSECUREALT = "TOSECUREALT"
         self.WIDTH = "WIDTH"
         self.HEIGHT = "HEIGHT"
@@ -96,12 +135,13 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.SLAP = "SLAP"
         self.SPACING = "SPACING"
         self.BUFFER = "BUFFER"
-        self.FOV = "FOV"
         self.FLIGHTSPEED = "FLIGHTSPEED"
+        self.IMUCALTIME = "IMUCALTIME"
+        self.SCANMODE = "SCANMODE"
 
         gsd_param = QgsProcessingParameterNumber(
             self.GSD,
-            "Ground sampling distance in cm (optional, advanced)",
+            "Ground sampling distance in cm",
             type = QgsProcessingParameterNumber.Double,
             optional = True
         )
@@ -109,30 +149,27 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             gsd_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
             )
         
-        sfact_param = QgsProcessingParameterNumber(
-            self.SENSORFACTOR,
-            "Sensor factor (optional, advanced)",
-            type = QgsProcessingParameterNumber.Double,
-            optional = True
-        )
-        sfact_param.setFlags(
-            sfact_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
-            )
-        
         alt_param = QgsProcessingParameterNumber(
             self.ALTITUDE,
-            "Terrain follow altitude (optional, advanced)",
+            "Terrain follow altitude in m",
             type = QgsProcessingParameterNumber.Double,
             optional = True
         )
         alt_param.setFlags(
             alt_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
             )
-        
+        dsm_param = QgsProcessingParameterRasterLayer(
+            self.DSM,
+            "Raster file for DSM follow altitude",
+            optional = True
+        )
+        dsm_param.setFlags(
+            dsm_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
+            )
         toalt_param = QgsProcessingParameterNumber(
             self.TOSECUREALT,
-            "Secure take-off altitude (optional, advanced)",
-            type = QgsProcessingParameterNumber.Double,
+            "Secure take-off altitude in m",
+            type = QgsProcessingParameterNumber.Integer,
             optional = True
         )
         toalt_param.setFlags(
@@ -141,8 +178,8 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         width_param = QgsProcessingParameterNumber(
             self.WIDTH,
-            "Plot width in m (optional, advanced)",
-            type = QgsProcessingParameterNumber.Double,
+            'Plot sidelength X ("width") in m',
+            type = QgsProcessingParameterNumber.Integer,
             optional = True
         )
         width_param.setFlags(
@@ -151,8 +188,8 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         height_param = QgsProcessingParameterNumber(
             self.HEIGHT,
-            "Plot height in m (optional, advanced)",
-            type = QgsProcessingParameterNumber.Double,
+            'Plot sidelength Y ("height") in m',
+            type = QgsProcessingParameterNumber.Integer,
             optional = True
         )
         height_param.setFlags(
@@ -161,8 +198,8 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         angle_param = QgsProcessingParameterNumber(
             self.ANGLE,
-            "Rotation angle in degrees (optional, advanced)",
-            type = QgsProcessingParameterNumber.Double,
+            "Rotation angle in degrees",
+            type = QgsProcessingParameterNumber.Integer,
             optional = True
             )
         angle_param.setFlags(
@@ -171,7 +208,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         slap_param = QgsProcessingParameterNumber(
             self.SLAP,
-            "Side overlap fraction (optional, advanced)",
+            "Side overlap fraction",
             type = QgsProcessingParameterNumber.Double,
             optional = True
         )
@@ -181,7 +218,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         sping_param = QgsProcessingParameterNumber(
             self.SPACING,
-            "Route spacing in m (optional, advanced)",
+            "Route spacing in m",
             type = QgsProcessingParameterNumber.Double,
             optional = True
         )
@@ -191,37 +228,44 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         buff_param = QgsProcessingParameterNumber(
             self.BUFFER,
-            "Buffer (optional, advanced)",
-            type = QgsProcessingParameterNumber.Double,
+            "Plot buffer in m",
+            type = QgsProcessingParameterNumber.Integer,
             optional = True
         )
         buff_param.setFlags(
             buff_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
             )
         
-        fov_param = QgsProcessingParameterNumber(
-            self.FOV,
-            "Field of view in degrees (optional, advanced)",
-            type = QgsProcessingParameterNumber.Double,
-            optional = True
-        )
-        fov_param.setFlags(
-            fov_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
-            )
-        
         speed_param = QgsProcessingParameterNumber(
             self.FLIGHTSPEED,
-            "Flight speed in m/s (optional, advanced)",
+            "Flight speed in m/s",
             type = QgsProcessingParameterNumber.Double,
             optional = True
         )
         speed_param.setFlags(
             speed_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
             )
+        imutime_param = QgsProcessingParameterNumber(
+            self.IMUCALTIME,
+            "Max flight time beteen IMU calibrations in s",
+            type = QgsProcessingParameterNumber.Integer,
+            optional = True
+        )
+        imutime_param.setFlags(
+            imutime_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
+            )
+        scanmode_param = QgsProcessingParameterBoolean(
+            self.SCANMODE,
+            "Use repetitive LiDAR scanning mode",
+            defaultValue = False
+        )
+        scanmode_param.setFlags(
+            scanmode_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
+            )
         
         self.addParameter(gsd_param)
-        self.addParameter(sfact_param)
         self.addParameter(alt_param)
+        self.addParameter(dsm_param)
         self.addParameter(toalt_param)
         self.addParameter(width_param)
         self.addParameter(height_param)
@@ -229,8 +273,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.addParameter(slap_param)
         self.addParameter(sping_param)
         self.addParameter(buff_param)
-        self.addParameter(fov_param)
         self.addParameter(speed_param)
+        self.addParameter(imutime_param)
+        self.addParameter(scanmode_param)
     
     def processAlgorithm(self, parameters, context, feedback):
         # Main parameters
@@ -246,8 +291,8 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         # Advanced parameters
         gsd = self.parameterAsDouble(parameters, self.GSD, context)
-        sfact = self.parameterAsDouble(parameters, self.SENSORFACTOR, context)
         alt = self.parameterAsDouble(parameters, self.ALTITUDE, context)
+        dsm_layer = self.parameterAsRasterLayer(parameters, self.DSM, context)
         toalt = self.parameterAsDouble(parameters, self.TOSECUREALT, context)
         width = parameters[self.WIDTH] if self.WIDTH in parameters else None
         height = parameters[self.HEIGHT] if self.HEIGHT in parameters else None
@@ -255,11 +300,11 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         slap = self.parameterAsDouble(parameters, self.SLAP, context)
         sping = self.parameterAsDouble(parameters, self.SPACING, context)
         buff = self.parameterAsDouble(parameters, self.BUFFER, context)
-        fov = self.parameterAsDouble(parameters, self.FOV, context)
+        imutime = self.parameterAsInt(parameters, self.IMUCALTIME, context)
         speed = self.parameterAsDouble(parameters, self.FLIGHTSPEED, context)
         
         # Compute centre point and plot width (if two points provided)
-        if point2 is not None and not point2.isEmpty():
+        if (point2 is not None) and (not point2.isEmpty()):
             point2_wgs84 = transform.transform(point2)
             lat2 = point2_wgs84.y()
             lon2 = point2_wgs84.x()
@@ -296,7 +341,15 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         # Get sensor type
         sensor_index = self.parameterAsEnum(parameters, "SENSOR", context)
-        sensor = sensor_options[sensor_index]
+        sensor = sensor_options_short[sensor_index]
+        
+        # Get altitude type
+        alttype_index = self.parameterAsEnum(parameters, "ALTTYPE", context)
+        alttype = altitude_options_short[alttype_index]
+        
+        # Get grid type
+        grid_index = self.parameterAsEnum(parameters, "GRIDMODE", context)
+        gridmode = grid_options_short[grid_index]
         
         # If user kept default, adjust dynamically
         if not filename_input:
@@ -313,16 +366,19 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             sensor,
             "-lat", str(lat),
             "-lon", str(lon),
-            "-dst", full_output_path
+            "-dst", full_output_path,
+            "-altt", alttype,
+            "-gm", gridmode
             ]
         
         # Check advanced parameters
         if parameters[self.GSD] is not None:
             cmd.extend(["-gsd", str(gsd)])
-        if parameters[self.SENSORFACTOR] is not None:
-            cmd.extend(["-sf", str(sfact)])
         if parameters[self.ALTITUDE] is not None:
             cmd.extend(["-alt", str(alt)])
+        if dsm_layer is not None and dsm_layer.isValid():
+            dsm_path = dsm_layer.source()
+            cmd.extend(["-dsm", dsm_path])
         if parameters[self.TOSECUREALT] is not None:
             cmd.extend(["-tsa", str(toalt)])
         if width is not None:
@@ -334,13 +390,17 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         if parameters[self.SLAP] is not None:
             cmd.extend(["-slap", str(slap)])
         if parameters[self.SPACING] is not None:
-            cmd.extend(["-sp", str(sping)])
+            cmd.extend(["-ds", str(sping)])
         if parameters[self.BUFFER] is not None:
             cmd.extend(["-buff", str(buff)])
-        if parameters[self.FOV] is not None:
-            cmd.extend(["-fov", str(fov)])
         if parameters[self.FLIGHTSPEED] is not None:
             cmd.extend(["-v", str(speed)])
+        if parameters[self.IMUCALTIME] is not None:
+            cmd.extend(["-imudt", str(imutime)])
+        if self.parameterAsBool(parameters, self.SCANMODE, context):
+            cmd.extend(["-sm", "repetitive"])
+        if self.parameterAsBool(parameters, self.CALIBIMU, context):
+            cmd.append("--calibrateimu")
 
         feedback.pushInfo(f"Running command: {' '.join(cmd)}\n")
 
