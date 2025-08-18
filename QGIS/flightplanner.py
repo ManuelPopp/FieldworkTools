@@ -58,7 +58,8 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             QgsProcessingParameterPoint(
                 self.LATLON2,
                 "Additional location (click on map or enter lat/lon)",
-                defaultValue = None
+                defaultValue = "",
+                optional = True
             )
         )
         self.addParameter(
@@ -91,6 +92,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.TOSECUREALT = "TOSECUREALT"
         self.WIDTH = "WIDTH"
         self.HEIGHT = "HEIGHT"
+        self.ANGLE = "ANGLE"
         self.SLAP = "SLAP"
         self.SPACING = "SPACING"
         self.BUFFER = "BUFFER"
@@ -157,6 +159,16 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             height_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
             )
         
+        angle_param = QgsProcessingParameterNumber(
+            self.ANGLE,
+            "Rotation angle in degrees (optional, advanced)",
+            type = QgsProcessingParameterNumber.Double,
+            optional = True
+            )
+        angle_param.setFlags(
+            angle_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
+            )
+        
         slap_param = QgsProcessingParameterNumber(
             self.SLAP,
             "Side overlap fraction (optional, advanced)",
@@ -213,6 +225,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.addParameter(toalt_param)
         self.addParameter(width_param)
         self.addParameter(height_param)
+        self.addParameter(angle_param)
         self.addParameter(slap_param)
         self.addParameter(sping_param)
         self.addParameter(buff_param)
@@ -236,9 +249,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         sfact = self.parameterAsDouble(parameters, self.SENSORFACTOR, context)
         alt = self.parameterAsDouble(parameters, self.ALTITUDE, context)
         toalt = self.parameterAsDouble(parameters, self.TOSECUREALT, context)
-        width = self.parameterAsDouble(parameters, self.WIDTH, context)
-        height = self.parameterAsDouble(parameters, self.HEIGHT, context)
-        angle_deg = None
+        width = parameters[self.WIDTH] if self.WIDTH in parameters else None
+        height = parameters[self.HEIGHT] if self.HEIGHT in parameters else None
+        angle_deg = parameters[self.ANGLE] if self.ANGLE in parameters else None
         slap = self.parameterAsDouble(parameters, self.SLAP, context)
         sping = self.parameterAsDouble(parameters, self.SPACING, context)
         buff = self.parameterAsDouble(parameters, self.BUFFER, context)
@@ -246,7 +259,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         speed = self.parameterAsDouble(parameters, self.FLIGHTSPEED, context)
         
         # Compute centre point and plot width (if two points provided)
-        if point2 is not None:
+        if point2 is not None and not point2.isEmpty():
             point2_wgs84 = transform.transform(point2)
             lat2 = point2_wgs84.y()
             lon2 = point2_wgs84.x()
@@ -256,16 +269,18 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             line = QgsGeometry.fromPolylineXY([point_wgs84, point2_wgs84])
             mid = line.interpolate(line.length() / 2).asPoint()
             
-            if parameters[self.WIDTH] is None:
+            if width is None:
                 width = d.measureLine(point_wgs84, point2_wgs84)
+                feedback.pushInfo(f"Selected segment width: {width} m.")
             
-            feedback.pushInfo(f"Selected segment width: {width} m.")
-            
-            angle_deg = d.bearing(
-                point_wgs84, point2_wgs84
-                ) * 180 / 3.141592653589793
-            angle_deg = int(angle_deg)
-            feedback.pushInfo(f"Computed angle {angle_deg}°.")
+            if angle_deg is None:
+                angle_deg = d.bearing(
+                    point_wgs84, point2_wgs84
+                    ) * 180 / 3.141592653589793
+                angle_deg = int(angle_deg)
+                feedback.pushInfo(f"Computed plot angle {angle_deg}°.")
+            else:
+                feedback.pushInfo(f"User-set plot angle {angle_deg}°.")
             
             # Overwrite centre point
             point_wgs84 = mid
@@ -312,20 +327,20 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             cmd.extend(["-tsa", str(toalt)])
         if width is not None:
             cmd.extend(["-dx", str(width)])
-        if parameters[self.HEIGHT] is not None:
+        if height is not None:
             cmd.extend(["-dy", str(height)])
-        if angle_deg is not None:
+        if isinstance(angle_deg, (int, float)):
             cmd.extend(["-ra", str(angle_deg)])
         if parameters[self.SLAP] is not None:
             cmd.extend(["-slap", str(slap)])
         if parameters[self.SPACING] is not None:
-            cmd.extend(["-sp", str(alt)])
+            cmd.extend(["-sp", str(sping)])
         if parameters[self.BUFFER] is not None:
-            cmd.extend(["-buff", str(alt)])
+            cmd.extend(["-buff", str(buff)])
         if parameters[self.FOV] is not None:
-            cmd.extend(["-fov", str(alt)])
+            cmd.extend(["-fov", str(fov)])
         if parameters[self.FLIGHTSPEED] is not None:
-            cmd.extend(["-v", str(alt)])
+            cmd.extend(["-v", str(speed)])
 
         feedback.pushInfo(f"Running command: {' '.join(cmd)}\n")
 
