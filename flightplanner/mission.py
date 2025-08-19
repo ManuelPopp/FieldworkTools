@@ -133,11 +133,26 @@ class Mission():
             "Longitude": [left, left, right, right]
             })
         
+        b = self.args.buffer
+        plot_points_utm_buff = pd.DataFrame({
+            "Latitude": [bottom - b, top + b, top + b, bottom - b],
+            "Longitude": [left - b, left - b, right + b, right + b]
+            })
+        
         plot_gdf_utm = gpd.GeoDataFrame(
             plot_points_utm,
             geometry = gpd.points_from_xy(
                 plot_points_utm.Longitude,
                 plot_points_utm.Latitude
+                ),
+            crs = self.local_crs
+            )
+        
+        plot_gdf_utm_buff = gpd.GeoDataFrame(
+            plot_points_utm_buff,
+            geometry = gpd.points_from_xy(
+                plot_points_utm_buff.Longitude,
+                plot_points_utm_buff.Latitude
                 ),
             crs = self.local_crs
             )
@@ -149,11 +164,19 @@ class Mission():
                 x_centre = x_centre, y_centre = y_centre,
                 angle = self.args.plotangle - 90
                 )
+            plot_gdf_utm_buff = rotate_gdf(
+                gdf = plot_gdf_utm_buff,
+                x_centre = x_centre, y_centre = y_centre,
+                angle = self.args.plotangle - 90
+            )
+        
         # Set mission attributes
         self.x_centre = x_centre
         self.y_centre = y_centre
         self.plot_gdf = plot_gdf_utm.to_crs("EPSG:4326")
         self.plot_gdf_utm = plot_gdf_utm
+        self.plot_gdf_buff = plot_gdf_utm_buff.to_crs("EPSG:4326")
+        self.plot_gdf_utm_buff = plot_gdf_utm_buff
         self.plot_coordinates = self.plot_gdf.get_coordinates()
         self._top = top
         self._bottom = bottom
@@ -190,8 +213,8 @@ class Mission():
                 "Check input geometry and parameters."
                 )
         last_point = Point(grid.iloc[-1,].x, grid.iloc[-1,].y)
-        corner_idx = self.plot_gdf.distance(last_point).idxmin()
-        x, y = self.plot_gdf.get_coordinates().iloc[corner_idx]
+        corner_idx = self.plot_gdf_buff.distance(last_point).idxmin()
+        x, y = self.plot_gdf_buff.get_coordinates().iloc[corner_idx]
         grid = pd.concat(
             [
                 grid,
@@ -228,8 +251,8 @@ class Mission():
                 "Check input geometry and parameters."
                 )
         last_point = Point(grid.iloc[-1,].x, grid.iloc[-1,].y)
-        corner_idx = self.plot_gdf.distance(last_point).idxmin()
-        x, y = self.plot_gdf.get_coordinates().iloc[corner_idx]
+        corner_idx = self.plot_gdf_buff.distance(last_point).idxmin()
+        x, y = self.plot_gdf_buff.get_coordinates().iloc[corner_idx]
         grid = pd.concat(
             [
                 grid,
@@ -573,3 +596,4 @@ class Mission():
             destfile = self.args.destfile,
             altitude_mode = self.altitude_mode
             )
+        print(f"Mission exported to {self.args.destfile}.")

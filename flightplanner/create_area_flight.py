@@ -17,7 +17,7 @@ if False:
         "--latitude", "47.362158", "--longitude", "8.4562517",
         "--width", "50", "--height", "50",
         "--destfile", "C:/Users/poppman/Desktop/tmp/linetestL2.kmz",
-        "--plotangle", "20",
+        "--plotangle", "60",
         "--altitude", "60",
         "--gridmode", "double",
         "--calibrateimu",
