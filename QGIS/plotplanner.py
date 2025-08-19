@@ -29,6 +29,9 @@ script_dir = "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD
 script_name = "create_area_flight.py"
 defaultname = "SamplingPlot"
 
+script_dir2 = os.path.join(os.path.dirname(script_dir), "plotplanner")
+script_name2 = "create_sampling_plot.py"
+
 sensor_options = ["Mavic M3M", "Zenmuse L2"]
 sensor_options_short = ["m3m", "l2"]
 
@@ -51,7 +54,13 @@ def get_unique_filename(folder, base = defaultname, ext = ".kmz"):
         i += 1
     return filename
 
+def loadAlgorithms(self):
+    self.addAlgorithm(CreateFlightplan())
+    self.addAlgorithm(CreateSamplingPlot())
+
 # Classes
+## Tools------------------------------------------------------------------------
+### Create flight plan
 class CreateFlightplan(QgsProcessingAlgorithm):
     LATLON = "LATLON"
     LATLON2 = "LATLON2"
@@ -403,7 +412,6 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             cmd.append("--calibrateimu")
 
         feedback.pushInfo(f"Running command: {' '.join(cmd)}\n")
-
         try:
             result = subprocess.run(
             cmd,
@@ -419,6 +427,37 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             feedback.reportError(f"Command failed: {e.stderr}")
             raise e
         
+        # Create sampling plot plan
+        feedback.pushInfo(f"Creating sampling plot\n")
+        cmd2 = [
+            "python", script_name2,
+            "-lat", str(lat),
+            "-lon", str(lon),
+            "-dst", full_output_path,
+            ]
+        if width is not None:
+            cmd.extend(["-dx", str(width)])
+        if height is not None:
+            cmd.extend(["-dy", str(height)])
+        if isinstance(angle_deg, (int, float)):
+            cmd.extend(["-ra", str(angle_deg)])
+        
+        try:
+            result = subprocess.run(
+            cmd2,
+            cwd = script_dir2,
+            check = True,
+            capture_output = True,
+            text = True
+            )
+            feedback.pushInfo(result.stdout)
+            if result.stderr:
+                feedback.reportError(result.stderr)
+        except subprocess.CalledProcessError as e:
+            feedback.reportError(f"Command failed: {e.stderr}")
+            raise e
+        
+        # Open output folder
         if platform.system() == "Windows":
             try:
                 os.startfile(out_dir)
@@ -428,10 +467,10 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         return {}
 
     def name(self):
-        return "create_flightplan"
+        return "create_plotplan"
 
     def displayName(self):
-        return "Create Flightplan"
+        return "Create Plot Plan"
 
     def group(self):
         return "Fieldwork Tools"
