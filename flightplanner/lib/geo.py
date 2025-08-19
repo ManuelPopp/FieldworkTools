@@ -100,7 +100,7 @@ def coordinates_to_lonlat(easting, northing, utm_crs):
 
     return lon, lat
 
-def coordinates_to_utm(lon, lat, utm_crs = None):
+def coordinates_to_utm(lon, lat, utm_crs = None, return_utm_zone = False):
     """
     Convert geographic coordinates (longitude, latitude) to UTM coordinates.
 
@@ -112,7 +112,9 @@ def coordinates_to_utm(lon, lat, utm_crs = None):
         Latitude in decimal degrees.
     utm_crs : str
         UTM coordinate reference system (CRS) to use for the conversion.
-
+    return_utm_zone : bool
+        Whether to return the UTM zone information.
+    
     Returns
     -------
     tuple
@@ -132,6 +134,8 @@ def coordinates_to_utm(lon, lat, utm_crs = None):
     # Extract the UTM coordinates
     easting, northing = gdf_utm.geometry.x[0], gdf_utm.geometry.y[0]
 
+    if return_utm_zone:
+        return easting, northing, utm_crs
     return easting, northing
 
 def waypoint_distance(wp0, wp1):

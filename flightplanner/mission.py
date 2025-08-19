@@ -24,7 +24,7 @@ from lib.utils import get_heading_angle
 from lib.io import write_template_kml, write_wayline_wpml, copy_dsm
 from lib.validation import validate_args
 from lib.waypoints import Waypoint
-from lib.grid import simple_grid, rotate_gdf
+from lib.grid import simple_grid, double_grid, rotate_gdf
 from lib.geo import (
     waypoint_distance, segment_duration, waypoint_altitude, segment_altitude
 )
@@ -209,7 +209,45 @@ class Mission():
             data = grid[["altitude", "velocity"]],
             geometry = gpd.points_from_xy(grid.x, grid.y)
             )
+    def _make_double_grid(self):
+        grid = double_grid(
+            top = self._top,
+            bottom = self._bottom,
+            left = self._left,
+            right = self._right,
+            x_centre = self.x_centre,
+            y_centre = self.y_centre,
+            local_crs = self.local_crs,
+            spacing = self.args.spacing,
+            buffer = self.args.buffer,
+            plotangle = self.args.plotangle
+        )
+        if grid.empty:
+            raise ValueError(
+                "No grid points were generated. " +
+                "Check input geometry and parameters."
+                )
+        last_point = Point(grid.iloc[-1,].x, grid.iloc[-1,].y)
+        corner_idx = self.plot_gdf.distance(last_point).idxmin()
+        x, y = self.plot_gdf.get_coordinates().iloc[corner_idx]
+        grid = pd.concat(
+            [
+                grid,
+                pd.DataFrame({
+                    "x" : [x, self.args.longitude],
+                    "y" : [y, self.args.latitude]
+                    })
+                ],
+            ignore_index = True
+            )
+        grid[["velocity"]] = self.args.flightspeed
+        grid[["altitude"]] = self.args.altitude
 
+        self._waypoint_df = gpd.GeoDataFrame(
+            data = grid[["altitude", "velocity"]],
+            geometry = gpd.points_from_xy(grid.x, grid.y)
+            )
+    
     def _grid_to_waypoints(self):
         for _, row in self._waypoint_df.iterrows():
             self.add_waypoint(
@@ -335,7 +373,9 @@ class Mission():
 
         if self.args.gridmode in ["lines", "simple"]:
             self._make_simple_grid()
-            self._grid_to_waypoints()
+        elif self.args.gridmode == "double":
+            self._make_double_grid()
+        self._grid_to_waypoints()
     
     # Insert waypoints--------------------------------------------------
     def split_waylines(

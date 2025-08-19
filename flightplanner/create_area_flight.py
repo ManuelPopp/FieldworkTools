@@ -19,7 +19,7 @@ if False:
         "--destfile", "C:/Users/poppman/Desktop/tmp/linetestL2.kmz",
         "--plotangle", "20",
         "--altitude", "60",
-        "--gridmode", "simple",
+        "--gridmode", "double",
         "--calibrateimu",
         "--altitudetype", "rtf",
         "--dsm_path", "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/org/fieldwork/2025_06_WSL/dem/swissalti3d_Rameren_lonlat.tif",
@@ -81,7 +81,7 @@ parser.add_argument(
     )
 parser.add_argument(
     "--altitude", "-alt", type = float, default = defaults.altitude,
-    help = "Flight altitude. Defaults calculated based on sensor factor and GSD."
+    help = "Flight altitude. Defaults calculated based on sensorfactor and GSD."
     )
 parser.add_argument(
     "--altitudetype", "-altt", type = str, default = defaults.altitudetype,

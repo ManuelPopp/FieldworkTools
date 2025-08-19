@@ -4,6 +4,7 @@ import geopandas as gpd
 from shapely.geometry import Point, LineString, Polygon
 from pyproj import Geod
 from warnings import warn
+from lib.geo import coordinates_to_utm, coordinates_to_lonlat
 
 def lines_horizontal(
         left, right, start, end, buffer, spacing, local_crs
@@ -272,3 +273,239 @@ def simple_grid(
     wayline_coordinates = wayline_gdf.get_coordinates()
 
     return wayline_coordinates
+
+def free_angle_flight_path(
+        centre_easting, centre_northing, local_crs,
+        top, bottom, left, right,
+        rectangle_rotation_angle, flight_angle,
+        line_spacing, buffer_m
+        ):
+    """
+    Generates waypoints for an S-shaped drone flight path over a rectangular plot,
+    extending the flight area by a specified buffer on all sides. All waypoints
+    will lie precisely on the perimeter of this buffered area.
+
+    Input defines the rectangle by its centre, dimensions, and rotation.
+    Waypoints are calculated in UTM space and then converted back to Latitude and Longitude.
+    The flight lines will be tilted by the specified flight_angle relative to East.
+
+    Args:
+        centre_lat (float): Latitude of the rectangle's centre.
+        centre_lon (float): Longitude of the rectangle's centre.
+        width (float): Width of the rectangle in meters (along its local x-axis).
+        height (float): Height of the rectangle in meters (along its local y-axis).
+        rectangle_rotation_angle (float): Rotation of the rectangle in degrees,
+                                          relative to East (positive x-axis in UTM).
+                                          0 degrees means width is along East-West.
+        flight_angle (float): The flight path angle in degrees relative to the
+                              positive x-axis (East in UTM).
+        line_spacing (float): The distance between parallel flight lines in meters.
+        buffer_m (float): The distance in meters by which to extend the flight
+                          area beyond the original rectangle's boundaries.
+
+    Returns:
+        tuple: A tuple containing:
+            - list of tuples: A list of (latitude, longitude) coordinates representing
+                              the waypoints for the drone flight.
+            - list of tuples: A list of (latitude, longitude) coordinates representing
+                              the corners of the buffered rectangle.
+            - list of tuples: A list of (latitude, longitude) coordinates representing
+                              the corners of the original rectangle.
+    """
+    # 1. Convert centre lat-lon to UTM
+    original_centroid_utm = np.array([centre_easting, centre_northing])
+
+    # Corners of an axis-aligned rectangle centreed at (0,0)
+    base_corners_relative_to_origin = np.array([
+        [left, bottom],
+        [right, bottom],
+        [right, top],
+        [left, top]
+    ]) - original_centroid_utm
+
+    # Rotate these base corners by the rectangle's rotation angle
+    rect_rotation_rad = np.deg2rad(rectangle_rotation_angle)
+    rect_rotation_matrix = np.array([
+        [np.cos(rect_rotation_rad), -np.sin(rect_rotation_rad)],
+        [np.sin(rect_rotation_rad), np.cos(rect_rotation_rad)]
+    ])
+    rotated_corners_relative_to_origin = base_corners_relative_to_origin \
+        @ rect_rotation_matrix.T
+
+    # Translate rotated corners to their absolute UTM positions
+    rect_coords_np_utm = rotated_corners_relative_to_origin + \
+        original_centroid_utm
+    
+    # The orientation of the original rectangle is simply its rotation angle
+    original_rect_orientation_rad = np.deg2rad(rectangle_rotation_angle)
+    
+    # 3. Calculate the buffered rectangle's corners in UTM
+    # Rotate the centreed original rectangle to be axis-aligned to its own orientation
+    align_rotation_matrix = np.array([
+        [
+            np.cos(-original_rect_orientation_rad),
+            -np.sin(-original_rect_orientation_rad)
+            ],
+        [np.sin(-original_rect_orientation_rad),
+         np.cos(-original_rect_orientation_rad)
+         ]
+    ])
+    original_rect_axis_aligned = (
+        rect_coords_np_utm - original_centroid_utm
+        ) @ align_rotation_matrix.T
+    
+    # Find the bounds of this axis-aligned original rectangle
+    x_min_aligned, y_min_aligned = np.min(original_rect_axis_aligned, axis = 0)
+    x_max_aligned, y_max_aligned = np.max(original_rect_axis_aligned, axis = 0)
+
+    # Apply the buffer to these axis-aligned dimensions
+    buffered_x_min_aligned = x_min_aligned - buffer_m
+    buffered_x_max_aligned = x_max_aligned + buffer_m
+    buffered_y_min_aligned = y_min_aligned - buffer_m
+    buffered_y_max_aligned = y_max_aligned + buffer_m
+
+    # Form the corners of this axis-aligned, buffered rectangle
+    buffered_corners_aligned = np.array([
+        [buffered_x_min_aligned, buffered_y_min_aligned],
+        [buffered_x_max_aligned, buffered_y_min_aligned],
+        [buffered_x_max_aligned, buffered_y_max_aligned],
+        [buffered_x_min_aligned, buffered_y_max_aligned]
+    ])
+
+    # Rotate this buffered rectangle back to the original orientation and translate back
+    unalign_rotation_matrix = np.array([
+        [np.cos(original_rect_orientation_rad), -np.sin(original_rect_orientation_rad)],
+        [np.sin(original_rect_orientation_rad), np.cos(original_rect_orientation_rad)]
+    ])
+    buffered_rect_corners_utm = (
+        buffered_corners_aligned @ unalign_rotation_matrix.T
+        ) + original_centroid_utm
+
+    # Calculate the centroid of this newly defined, rotated buffered rectangle
+    centroid_of_buffered_rect_utm = np.mean(buffered_rect_corners_utm, axis = 0)
+
+    # centre the BUFFERED rectangle around its own centroid for flight path rotation
+    centreed_buffered_rect_for_flight_rotation = buffered_rect_corners_utm - \
+        centroid_of_buffered_rect_utm
+    
+    # Convert flight angle from degrees to radians
+    flight_angle_rad = np.deg2rad(flight_angle)
+
+    # Create a rotation matrix for the flight path.
+    flight_path_rotation_matrix = np.array([
+        [np.cos(flight_angle_rad), -np.sin(flight_angle_rad)],
+        [np.sin(flight_angle_rad), np.cos(flight_angle_rad)]
+    ])
+
+    # Rotate the BUFFERED rectangle's corners into this new coordinate system
+    # where the flight lines will be "vertical" (parallel to the new y-axis)
+    rotated_buffered_rect_for_flight_path_generation = centreed_buffered_rect_for_flight_rotation @ flight_path_rotation_matrix.T
+
+    # Define the four sides of this *rotated buffered rectangle* as line segments
+    rotated_buffered_sides_for_flight_path_generation = [
+        (rotated_buffered_rect_for_flight_path_generation[0], rotated_buffered_rect_for_flight_path_generation[1]),
+        (rotated_buffered_rect_for_flight_path_generation[1], rotated_buffered_rect_for_flight_path_generation[2]),
+        (rotated_buffered_rect_for_flight_path_generation[2], rotated_buffered_rect_for_flight_path_generation[3]),
+        (rotated_buffered_rect_for_flight_path_generation[3], rotated_buffered_rect_for_flight_path_generation[0])
+    ]
+
+    # Find the bounds of the rotated BUFFERED rectangle for the flight path's x-range
+    x_min_flight_aligned, _ = np.min(rotated_buffered_rect_for_flight_path_generation, axis=0)
+    x_max_flight_aligned, _ = np.max(rotated_buffered_rect_for_flight_path_generation, axis=0)
+
+    waypoints_rotated_for_flight = []
+    current_x_rotated = x_min_flight_aligned
+    line_direction = 1  # 1 for moving up (increasing y in rotated system), -1 for moving down
+
+    # Iterate through x-coordinates in the flight-aligned rotated system to create parallel lines
+    while current_x_rotated <= x_max_flight_aligned + line_spacing / 2:
+        intersections = []
+        for p1, p2 in rotated_buffered_sides_for_flight_path_generation:
+            x1, y1 = p1
+            x2, y2 = p2
+
+            if np.isclose(x1, x2): # Vertical segment in rotated space
+                if np.isclose(x1, current_x_rotated):
+                    intersections.extend([y1, y2])
+            else:
+                t = (current_x_rotated - x1) / (x2 - x1)
+                if 0 <= t <= 1 and \
+                   (
+                       (
+                           min(x1, x2) <= current_x_rotated <= max(x1, x2)
+                           ) or np.isclose(
+                               min(x1, x2), current_x_rotated
+                               ) or np.isclose(
+                                   max(x1, x2), current_x_rotated
+                                   )
+                                   ):
+                    y_intersection = y1 + t * (y2 - y1)
+                    intersections.append(y_intersection)
+
+        if len(intersections) >= 2:
+            y_min_line = min(intersections)
+            y_max_line = max(intersections)
+
+            if line_direction == 1:
+                waypoints_rotated_for_flight.append((current_x_rotated, y_min_line))
+                waypoints_rotated_for_flight.append((current_x_rotated, y_max_line))
+            else:
+                waypoints_rotated_for_flight.append((current_x_rotated, y_max_line))
+                waypoints_rotated_for_flight.append((current_x_rotated, y_min_line))
+
+        current_x_rotated += line_spacing
+        line_direction *= -1
+
+    # Rotate the waypoints back from the flight-aligned system to the original UTM system
+    inverse_flight_path_rotation_matrix = np.linalg.inv(flight_path_rotation_matrix)
+    final_waypoints_utm = []
+    for point_rotated in waypoints_rotated_for_flight:
+        rotated_point_utm = np.array(point_rotated) @ inverse_flight_path_rotation_matrix.T
+        final_waypoints_utm.append(tuple(rotated_point_utm + centroid_of_buffered_rect_utm))
+
+    # 4. Convert final UTM waypoints and buffered rectangle corners back to Lat-Lon
+    final_waypoints_lonlat = []
+    for easting, northing in final_waypoints_utm:
+        lon, lat = coordinates_to_lonlat(easting, northing, utm_crs = local_crs)
+        final_waypoints_lonlat.append((lon, lat))
+
+    buffered_rect_corners_latlon = []
+    for easting, northing in buffered_rect_corners_utm:
+        lon, lat = coordinates_to_lonlat(easting, northing, utm_crs = local_crs)
+        buffered_rect_corners_latlon.append((lat, lon))
+
+    original_rect_corners_latlon = []
+    for easting, northing in rect_coords_np_utm:
+        lon, lat = coordinates_to_lonlat(easting, northing, utm_crs = local_crs)
+        original_rect_corners_latlon.append((lon, lat))
+    
+    coord_df = pd.DataFrame(final_waypoints_lonlat, columns = ["x", "y"])
+    
+    return coord_df, buffered_rect_corners_latlon, original_rect_corners_latlon
+
+def double_grid(
+        top, bottom, left, right, x_centre, y_centre, spacing, buffer,
+        plotangle, local_crs
+        ):
+    base_grid_coordinates = simple_grid(
+        top, bottom, left, right, x_centre, y_centre, spacing, buffer,
+        plotangle, gridmode = "simple", local_crs = local_crs
+        )
+    
+    rotation_45_grid_coordinates, _, _ = free_angle_flight_path(
+        centre_northing = y_centre, centre_easting = x_centre,
+        local_crs = local_crs,
+        top = top, bottom = bottom, left = left, right = right,
+        rectangle_rotation_angle = plotangle, flight_angle = 45,
+        line_spacing = spacing, buffer_m = buffer
+        )
+    
+    double_grid_coordinates = pd.concat(
+        [
+            base_grid_coordinates,
+            rotation_45_grid_coordinates
+            ],
+        ignore_index = True
+        )
+    
+    return double_grid_coordinates
