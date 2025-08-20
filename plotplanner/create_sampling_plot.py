@@ -36,6 +36,10 @@ parser.add_argument(
     help = "Output file."
     )
 parser.add_argument(
+    "--output_format", "-of", type = str, default = None,
+    help = "Output file format."
+    )
+parser.add_argument(
     "--plotangle", "-ra", type = int, default = 90,
     help = "Route angle (relative to a South-North vector) in degrees." +
         "Defaults to 90 degrees (West-East direction)."
@@ -52,6 +56,10 @@ parser.add_argument(
     "--area", "-area", type = float, default = 10000,
     help = "Area of the rectangular plot in m^2." +
         "Defaults to {defaults.area}."
+    )
+parser.add_argument(
+    "--numpoints", "-n", type = int, default = 6,
+    help = "Number of points to sample within the plot area. Defaults to 8."
     )
 
 args = parser.parse_args()
@@ -85,8 +93,8 @@ def rotate_gdf(gdf, x_centre, y_centre, angle):
     coords_rotated = rotated_corners_rel_to_ctr + centre_utm
     geometries = [Point(xy) for xy in coords_rotated]
     data = {
-        "Latitude": coords_rotated[:, 1],
-        "Longitude": coords_rotated[:, 0],
+        "x": coords_rotated[:, 0],
+        "y": coords_rotated[:, 1],
         "geometry": geometries
     }
     return gpd.GeoDataFrame(data, crs = gdf.crs)
@@ -94,13 +102,13 @@ def rotate_gdf(gdf, x_centre, y_centre, angle):
 def get_plot(latitude, longitude, width, height, plotangle):
     df = pd.DataFrame({
         "ID": [1],
-        "Latitude": [latitude],
-        "Longitude": [longitude]
+        "x": [longitude],
+        "y": [latitude]
         })
     
     gdf = gpd.GeoDataFrame(
         df,
-        geometry = gpd.points_from_xy(df.Longitude, df.Latitude),
+        geometry = gpd.points_from_xy(df.x, df.y),
         crs = "EPSG:4326"
         )
     
@@ -115,15 +123,15 @@ def get_plot(latitude, longitude, width, height, plotangle):
     bottom = y_centre - (height / 2)
 
     plot_points_utm = pd.DataFrame({
-        "Latitude": [bottom, top, top, bottom],
-        "Longitude": [left, left, right, right]
+        "x": [left, left, right, right],
+        "y": [bottom, top, top, bottom]
         })
     
     plot_gdf_utm = gpd.GeoDataFrame(
         plot_points_utm,
         geometry = gpd.points_from_xy(
-            plot_points_utm.Longitude,
-            plot_points_utm.Latitude
+            plot_points_utm.x,
+            plot_points_utm.y
             ),
         crs = local_crs
         )
@@ -135,12 +143,113 @@ def get_plot(latitude, longitude, width, height, plotangle):
             x_centre = x_centre, y_centre = y_centre,
             angle = plotangle - 90
             )
+    coords = list(zip(plot_gdf_utm.geometry.x, plot_gdf_utm.geometry.y))
+    polygon = Polygon(coords)
+    plot_polygon_gdf = gpd.GeoDataFrame(
+        {"ID": [1]}, geometry = [polygon], crs = plot_gdf_utm.crs
+    )
+    return plot_polygon_gdf
+
+def optimal_point_distribution(width, height, N):
+    if not (isinstance(N, int) and N > 0):
+        raise ValueError("N must be a positive integer.")
+    if N == 1:
+        return np.array([[width / 2, height / 2]])
     
-    return plot_gdf_utm
+    if N == 2:
+        if width >= height:
+            return np.array(
+                [[width / 4, height / 2], [3 * width / 4, height / 2]]
+                )
+        else:
+            return np.array(
+                [[width / 2, height / 4], [width / 2, 3 * height / 4]]
+            )
+    if N == 3:
+        return np.array(
+            [
+                [width / 4, height / 4],
+                [3 * width / 4, height / 4],
+                [width / 2, 3 * height / 4]
+            ]
+        )
+    if N == 4:
+        return np.array(
+            [
+                [width / 4, height / 4],
+                [3 * width / 4, height / 4],
+                [width / 4, 3 * height / 4],
+                [3 * width / 4, 3 * height / 4]
+            ]
+        )
+    if N == 5:
+        return np.array(
+            [
+                [width / 4, height / 4],
+                [3 * width / 4, height / 4],
+                [width / 2, height / 2],
+                [width / 4, 3 * height / 4],
+                [3 * width / 4, 3 * height / 4]
+            ]
+        )
+    if N == 6:
+        if width >= height:
+            return np.array([
+                [width / 4, height / 4],
+                [width / 2, height / 4],
+                [3 * width / 4, height / 4],
+                [width / 4, 3 * height / 4],
+                [width / 2, 3 * height / 4],
+                [3 * width / 4, 3 * height / 4]
+            ])
+        else:
+            return np.array([
+                [width / 4, height / 4],
+                [width / 4, height / 2],
+                [width / 4, 3 * height / 4],
+                [3 * width / 4, height / 4],
+                [3 * width / 4, height / 2],
+                [3 * width / 4, 3 * height / 4]
+            ])
+
+def get_point_locations(
+        longitude, latitude, width, height, N, plotangle,
+        label = "A{i}"
+        ):
+    points = optimal_point_distribution(width, height, N)
+    gdf = gpd.GeoDataFrame(
+        data = pd.DataFrame({"id": [1]}),
+        geometry = gpd.points_from_xy([longitude], [latitude]),
+        crs = "EPSG:4326"
+        )
+    utm_crs = gdf.estimate_utm_crs()
+    gdf_utm = gdf.to_crs(utm_crs)
+
+    points_centered = points - np.array([width / 2, height / 2])
+    points_utm = points_centered + np.array([
+        gdf_utm.geometry.x[0], gdf_utm.geometry.y[0]
+        ])
+    points_utm_df = pd.DataFrame(points_utm, columns = ["x", "y"])
+    points_utm_gdf = gpd.GeoDataFrame(
+        points_utm_df,
+        geometry = gpd.points_from_xy(points_utm_df.x, points_utm_df.y),
+        crs = utm_crs
+    )
+    if plotangle != 90:
+        points_utm_gdf = rotate_gdf(
+            points_utm_gdf,
+            x_centre = gdf_utm.geometry.x[0],
+            y_centre = gdf_utm.geometry.y[0],
+            angle = plotangle - 90
+            )
+    points_gdf = points_utm_gdf.to_crs("EPSG:4326")
+    points_gdf["label"] = [label.format(i = i + 1) for i in range(N)]
+
+    return points_gdf
 
 # Body------------------------------------------------------------------
 if __name__ == "__main__":
-    ## Create plot
+    ## Create plot boundaries
     plot_gdf_utm = get_plot(
         latitude = args.latitude,
         longitude = args.longitude,
@@ -149,5 +258,57 @@ if __name__ == "__main__":
         plotangle = args.plotangle
     )
     plot_gdf = plot_gdf_utm.to_crs("EPSG:4326")
-    dst = os.path.splitext(args.destfile)[0] + ".kml"
-    plot_gdf.to_file(dst, driver = "KML")
+    if args.output_format is None:
+        output_format = os.path.splitext(
+            args.destfile
+            )[1].lower().replace(".", "")
+    else:
+        output_format = args.output_format.lower()
+    
+    if output_format not in ["gpkg", "kml", "kmz"]:
+        raise ValueError(
+            f"Invalid output format {args.output_format}. " +
+            "Supported formats are: gpkg, kml"
+            )
+    elif output_format == "gpkg":
+        out_ext = ".gpkg"
+    elif output_format == "kml":
+        out_ext = ".kml"
+    elif output_format == "kmz":
+        warn(
+            "Warning: Unsupported output format KMZ requested. Writing KML."
+            )
+        out_ext = ".kml"
+    
+    dst = os.path.splitext(args.destfile)[0] + out_ext
+    
+    ## Get measurement locations
+    points = get_point_locations(
+        longitude = args.longitude,
+        latitude = args.latitude,
+        width = args.width,
+        height = args.height,
+        N = args.numpoints,
+        plotangle = args.plotangle
+    )
+    points = points[["label", "geometry"]]
+    
+    plot_gdf[["label"]] = "Boundary"
+    plot_gdf = plot_gdf[points.columns]
+    ## Write output
+    if output_format == "gpkg":
+        print("Writing to GPKG...")
+        plot_gdf.to_file(dst, layer = "polygons", driver = "GPKG")
+        points.to_file(dst, layer = "points", driver = "GPKG")
+    elif output_format in ["kml", "kmz"]:
+        print("Writing to KML...")
+        combined = pd.concat([plot_gdf, points], ignore_index = True)
+        combined = gpd.GeoDataFrame(
+            combined, geometry = "geometry", crs = plot_gdf.crs
+            )
+        combined["label"] = combined["label"].astype(str)
+        combined = combined.rename(columns = {"label": "Name"})
+        combined["Name"] = combined["Name"].astype(str)
+        combined[["Name", "geometry"]].to_file(dst, driver = "KML")
+
+    print(f"Output written to {dst}.")
