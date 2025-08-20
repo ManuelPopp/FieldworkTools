@@ -436,11 +436,11 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             "-dst", full_output_path,
             ]
         if width is not None:
-            cmd.extend(["-dx", str(width)])
+            cmd2.extend(["-dx", str(width)])
         if height is not None:
-            cmd.extend(["-dy", str(height)])
+            cmd2.extend(["-dy", str(height)])
         if isinstance(angle_deg, (int, float)):
-            cmd.extend(["-ra", str(angle_deg)])
+            cmd2.extend(["-ra", str(angle_deg)])
         
         try:
             result = subprocess.run(
