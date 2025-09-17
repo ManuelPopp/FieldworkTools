@@ -54,8 +54,13 @@ class M3MConfig(Config):
     verticalfov: float = 48.1
     secondary_hfov: float = 84.0
     secondary_vfov: float = None  # Unknown value, set to None
-    coefficients: list = field(
+    coefficients_sol: list = field(
         default_factory = lambda: [-0.0119347, 1.19347]
+        )
+    coefficients_atd: list = field(
+        default_factory = lambda: [
+            -0.00896313366070803, 0.8963133773348276
+            ]
         )
     flightspeed: float = 3.0
     template_directory: str = os.path.join(".", "templates", "m3m")
@@ -72,8 +77,13 @@ class L2Config(Matrice400Config):
     verticalfov: float = 75.0 # In non-repetitive mode
     secondary_hfov: float = 84.0
     secondary_vfov: float = None  # Unknown value, set to None
-    coefficients: list = field(
+    coefficients_sol: list = field(
         default_factory = lambda: [-0.01098424, 1.099605]
+        )
+    coefficients_atd: list = field(
+        default_factory = lambda: [
+            -0.010626525878906256, 1.0626525878906254
+            ]
         )
     flightspeed: float = 4.0
     overlapsensor: str = "LS"

@@ -30,7 +30,7 @@ def validate_args(args):
             (args.horizontalfov / 2) * np.pi / 180
             ) * args.altitude * (2 - args.sideoverlap)
         """
-        c1, c2 = args.coefficients
+        c1, c2 = args.coefficients_sol
         args.spacing = (c1 * args.sideoverlap * 100 + c2) * args.altitude
     else:
         """Not working! Not working! Not working! Not working! Not working!
@@ -38,7 +38,7 @@ def validate_args(args):
             np.tan((args.horizontalfov / 2) * np.pi / 180) * args.altitude
             )
         """
-        c1, c2 = args.coefficients
+        c1, c2 = args.coefficients_sol
         args.sideoverlap = (args.spacing / (args.altitude * 100) - c2) / c1
         warn(
             "Spacing set by user. This will override the side overlap. " +

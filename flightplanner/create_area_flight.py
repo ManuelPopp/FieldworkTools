@@ -128,7 +128,7 @@ parser.add_argument(
         f"Defaults to {defaults.sideoverlap}."
     )
 parser.add_argument(
-    "--frontoverlap", "-fol", type = float, default = None,
+    "--frontoverlap", "-flap", type = float, default = None,
     help = "Overlap between images in direction of movement (fraction). " +
         f"Defaults to {defaults.frontoverlap}."
     )

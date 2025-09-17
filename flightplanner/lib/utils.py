@@ -33,6 +33,36 @@ def get_heading_angle(p0, p1):
     
     return phi
 
+def photo_trigger_intervals(
+        front_overlap, altitude, coefficient_0, coefficient_1
+        ):
+    """
+    Calculate the time interval between photo triggers based on the
+    front overlap fraction, altitude, and sensor parameters from config.
+    
+    Parameters
+    ----------
+    front_overlap : float
+        Front overlap in percent.
+    altitude : float
+        Flight altitude in meters.
+    coefficient_0 : float
+        Sensor configuration parameter.
+    coefficient_1 : float
+        Sensor configuration parameter.
+    
+    Returns
+    -------
+    float
+        Trigger distance in meters.
+    
+    """
+    slope_val = coefficient_0 * altitude
+    intercept_val = coefficient_1 * altitude
+    atp = slope_val * front_overlap + intercept_val
+    
+    return atp
+
 # Experimental, not working---------------------------------------------
 def get_overlaps(
         horizontalfov, secondary_hfov, altitude, spacing, overlapsensor,
@@ -95,42 +125,6 @@ def get_overlaps(
         
         return (lsolaph, lsolapw, colaph, colapw)
 
-def photo_trigger_intervals(
-        front_overlap_fraction, vertical_fov, altitude, velocity
-        ):
-    """NOT WORKING! NOT WORKING! NOT WORKING! NOT WORKING! NOT WORKING!
-    Calculate the time interval between photo triggers based on the
-    front overlap fraction, vertical field of view, altitude, and velocity.
-    
-    Parameters
-    ----------
-    front_overlap_fraction : float
-        Fraction of front overlap (0 to 1).
-    vertical_fov : float
-        Vertical field of view in degrees.
-    altitude : float
-        Flight altitude in meters.
-    velocity : float
-        Flight velocity in m/s.
-    
-    Returns
-    -------
-    float
-        Time interval between photo triggers in seconds.
-    
-    """
-    try:
-        fov_half = vertical_fov / 2 * np.pi / 180
-        delta_t = (
-            2 - front_overlap_fraction
-            ) * np.tan(fov_half) * altitude / velocity
-        return delta_t
-    except ZeroDivisionError as e:
-        warn(f"Error calculating photo trigger intervals: {e}. Using default.")
-    except TypeError as e:
-        warn(f"Error calculating photo trigger intervals: {e}. Using default.")
-    return 1.0
-
 def get_mapping_vertical_fov(args):
     """
     Get the mapping for vertical field of view (FOV).
@@ -141,16 +135,3 @@ def get_mapping_vertical_fov(args):
         fov = args.secondary_vfov
     
     return fov
-
-def get_photo_trigger_intervals(args):
-    lsolaph, lsolapw, colaph, colapw = get_overlaps(
-        horizontalfov, secondary_hfov, altitude, spacing, overlapsensor,
-        side_overlap, front_overlap
-    )
-    action_trigger = photo_trigger_intervals(
-        front_overlap_fraction = colapw / 100,
-        vertical_fov = get_mapping_vertical_fov(),
-        altitude = args.altitude,
-        velocity = args.flightspeed
-        )
-    return action_trigger

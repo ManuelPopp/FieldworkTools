@@ -20,7 +20,7 @@ from warnings import warn
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 
-from lib.utils import get_heading_angle
+from lib.utils import get_heading_angle, photo_trigger_intervals
 from lib.io import write_template_kml, write_wayline_wpml, copy_dsm
 from lib.validation import validate_args
 from lib.waypoints import Waypoint
@@ -99,6 +99,16 @@ class Mission():
             return "relativeToStartPoint"
         if self.args.altitudetype == "dsm":
             return "WGS84"
+    
+    @property
+    def action_trigger_param(self):
+        atp = photo_trigger_intervals(
+            front_overlap = self.args.frontoverlap * 100,
+            altitude = self.args.altitude,
+            coefficient_0 = self.args.coefficients_atd[0],
+            coefficient_1 = self.args.coefficients_atd[1]
+        )
+        return atp
     
     # Input validation--------------------------------------------------
     def validate_args(self):
@@ -293,12 +303,14 @@ class Mission():
 
     def _default_ms_mapping(self):
         self.waypoints[0].add_action_group(
-            StartNadirMSMapping, action_trigger_param = 7.7
+            StartNadirMSMapping,
+            action_trigger_param = self.action_trigger_param
             )
         self.waypoints[-3].add_action_group(StopNadirMSMapping)
         self.waypoints[-2].add_action_group(PrepareObliqueMSMapping)
         self.waypoints[-2].add_action_group(
-            StartObliqueMSMapping, action_trigger_param = 7.7
+            StartObliqueMSMapping,
+            action_trigger_param = self.action_trigger_param
             )
         self.waypoints[-1].add_action_group(StopObliqueMSMapping)
         for i in [0, -3, -2, -1]:
@@ -309,12 +321,14 @@ class Mission():
     def _default_lidar_mapping(self):
         self.waypoints[0].add_action_group(StartRecordPointCloud)
         self.waypoints[0].add_action_group(
-            StartLiDARMapping, action_trigger_param = 18.6
+            StartLiDARMapping,
+            action_trigger_param = self.action_trigger_param
             )
         self.waypoints[-3].add_action_group(StopRecordPointCloud)
         self.waypoints[-2].add_action_group(PrepareObliqueLiDARMapping)
         self.waypoints[-2].add_action_group(
-            StartObliqueLiDARMapping, action_trigger_param = 18.6
+            StartObliqueLiDARMapping,
+            action_trigger_param = self.action_trigger_param
             )
         self.waypoints[-2].add_action_group(StopObliqueLiDARMapping)
     
