@@ -44,6 +44,7 @@ f_output <- args[3]
 
 #-------------------------------------------------------------------------------
 #> Read point cloud
+print("Loading files...")
 las <- lidR::readLAS(f_pointcloud)
 
 if (is.empty(las)) {
@@ -65,6 +66,9 @@ if (!intersects) {
 
 #-------------------------------------------------------------------------------
 #> Crop point cloud
+print("Cropping point cloud...")
 lidR::readLAS(f_pointcloud) %>%
   lidR::clip_rectangle(extent$xmin, extent$ymin, extent$xmax, extent$ymax) %>%
   lidR::writeLAS(f_output)
+
+print(paste0("Process inished. Output saved as ", f_output, "."))

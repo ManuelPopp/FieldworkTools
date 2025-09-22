@@ -16,7 +16,7 @@ import json
 from qgis.PyQt.QtCore import QProcess
 from qgis.core import (
     QgsProcessingAlgorithm, QgsProcessingParameterPoint,
-    QgsProcessingParameterBoolean,
+    QgsProcessingParameterFileDestination,
     QgsProcessingParameterString, QgsProcessingParameterNumber,
     QgsProcessingParameterFile, QgsProcessingParameterVectorLayer,
     QgsProcessingParameterFolderDestination, QgsProcessingParameterDefinition,
@@ -30,6 +30,9 @@ import subprocess
 
 script_dir = "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/R"
 script_name = "crop_las.R"
+kwargs = {}
+if platform.system() == "Windows":
+    kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
 
 # Store a settings file with the Rscript.exe path
 try:
@@ -96,9 +99,11 @@ class CropPointCloud(QgsProcessingAlgorithm):
             QgsProcessingParameterFile(self.POINTCLOUD, "Point cloud file")
         )
         self.addParameter(
-            QgsProcessingParameterString(
-                self.OUTPUT, "Output cropped point cloud file"
-                )
+            QgsProcessingParameterFileDestination(
+                "OUTPUT",
+                "Output LAS file",
+                fileFilter = "LAS files (*.las)"
+            )
         )
     
     def processAlgorithm(self, parameters, context, feedback):
@@ -107,7 +112,8 @@ class CropPointCloud(QgsProcessingAlgorithm):
             )
         vector_path = vector_layer.source() if vector_layer is not None else None
         las_path = self.parameterAsFile(parameters, self.POINTCLOUD, context)
-        output_path = self.parameterAsString(parameters, self.OUTPUT, context)
+        
+        output_path = self.parameterAsFile(parameters, self.OUTPUT, context)
         
         # Path to your R script
         if not os.path.exists(os.path.join(script_dir, script_name)):
@@ -126,7 +132,8 @@ class CropPointCloud(QgsProcessingAlgorithm):
             cwd = script_dir,
             check = True,
             capture_output = True,
-            text = True
+            text = True,
+            **kwargs
             )
             feedback.pushInfo(result.stdout)
             if result.stderr:
