@@ -73,6 +73,8 @@ class Matrice400Config(Config):
 
 @dataclass
 class L2Config(Matrice400Config):
+    sideoverlap: float = 0.75
+    frontoverlap: float = 0.9
     horizontalfov: float = 70.0
     verticalfov: float = 75.0 # In non-repetitive mode
     secondary_hfov: float = 84.0

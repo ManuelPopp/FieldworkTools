@@ -242,10 +242,10 @@ args = parser.parse_args()
 
 # Body------------------------------------------------------------------
 if __name__ == "__main__":
-    ## Create dataframe
+    ## Create mission object
     mission = Mission(args)
 
-    ## Create mission
+    ## Add waypoints and actions
     mission.make_waypoints()
     mission.add_actions()
     if mission.args.calibrateimu:

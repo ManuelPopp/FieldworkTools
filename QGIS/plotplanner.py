@@ -142,6 +142,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.HEIGHT = "HEIGHT"
         self.ANGLE = "ANGLE"
         self.SLAP = "SLAP"
+        self.FLAP = "FLAP"
         self.SPACING = "SPACING"
         self.BUFFER = "BUFFER"
         self.FLIGHTSPEED = "FLIGHTSPEED"
@@ -224,6 +225,15 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         slap_param.setFlags(
             slap_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
             )
+        flap_param = QgsProcessingParameterNumber(
+            self.FLAP,
+            "Front overlap fraction",
+            type = QgsProcessingParameterNumber.Double,
+            optional = True
+        )
+        flap_param.setFlags(
+            flap_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
+        )
         
         sping_param = QgsProcessingParameterNumber(
             self.SPACING,
@@ -280,6 +290,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.addParameter(height_param)
         self.addParameter(angle_param)
         self.addParameter(slap_param)
+        self.addParameter(flap_param)
         self.addParameter(sping_param)
         self.addParameter(buff_param)
         self.addParameter(speed_param)
@@ -307,6 +318,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         height = parameters[self.HEIGHT] if self.HEIGHT in parameters else None
         angle_deg = parameters[self.ANGLE] if self.ANGLE in parameters else None
         slap = self.parameterAsDouble(parameters, self.SLAP, context)
+        flap = self.parameterAsDouble(parameters, self.FLAP, context)
         sping = self.parameterAsDouble(parameters, self.SPACING, context)
         buff = self.parameterAsDouble(parameters, self.BUFFER, context)
         imutime = self.parameterAsInt(parameters, self.IMUCALTIME, context)
@@ -398,6 +410,8 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             cmd.extend(["-ra", str(angle_deg)])
         if parameters[self.SLAP] is not None:
             cmd.extend(["-slap", str(slap)])
+        if parameters[self.FLAP] is not None:
+            cmd.extend(["-flap", str(flap)])
         if parameters[self.SPACING] is not None:
             cmd.extend(["-ds", str(sping)])
         if parameters[self.BUFFER] is not None:
@@ -413,16 +427,16 @@ class CreateFlightplan(QgsProcessingAlgorithm):
 
         feedback.pushInfo(f"Running command: {' '.join(cmd)}\n")
         try:
-            result = subprocess.run(
+            result0 = subprocess.run(
             cmd,
             cwd = script_dir,
             check = True,
             capture_output = True,
             text = True
             )
-            feedback.pushInfo(result.stdout)
-            if result.stderr:
-                feedback.reportError(result.stderr)
+            feedback.pushInfo(result0.stdout)
+            if result0.stderr:
+                feedback.reportError(result0.stderr)
         except subprocess.CalledProcessError as e:
             feedback.reportError(f"Command failed: {e.stderr}")
             raise e
@@ -443,19 +457,24 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             cmd2.extend(["-ra", str(angle_deg)])
         
         try:
-            result = subprocess.run(
+            result1 = subprocess.run(
             cmd2,
             cwd = script_dir2,
             check = True,
             capture_output = True,
             text = True
             )
-            feedback.pushInfo(result.stdout)
-            if result.stderr:
-                feedback.reportError(result.stderr)
+            feedback.pushInfo(result1.stdout)
+            if result1.stderr:
+                feedback.reportError(result1.stderr)
         except subprocess.CalledProcessError as e:
             feedback.reportError(f"Command failed: {e.stderr}")
             raise e
+        
+        with open(
+            os.path.join(out_dir, "report.txt"
+            ), "w", encoding = "utf-8") as f:
+            f.write(result0.stdout)
         
         # Open output folder
         if platform.system() == "Windows":
