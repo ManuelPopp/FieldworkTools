@@ -26,7 +26,7 @@ import <- function(...) {
 }
 
 import(
-  "terra", "tidyterra", "lidR",
+  "sf", "terra", "tidyterra", "lidR",
   dependencies = TRUE
 )
 
