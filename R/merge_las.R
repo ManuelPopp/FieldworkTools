@@ -34,7 +34,7 @@ import(
 #> Read command-line arguments
 # Usage: Rscript crop_las.R input.las polygon.kml output.las
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) != 3) {
+if (length(args) != 2) {
   stop("Usage: Rscript merge_las.R <input_las_folder> <output_las_file>")
 }
 
@@ -48,6 +48,10 @@ las_files <- list.files(src, pattern = "\\.las$", full.names = TRUE)
 if (length(las_files) < 1) {
   stop(paste0("No *.las files found in ", src, "."))
 }
+cat(
+  "Input files:\n",
+  paste(las_files, collapse = "\n")
+  )
 
 las_list <- lapply(las_files, lidR::readLAS)
 
