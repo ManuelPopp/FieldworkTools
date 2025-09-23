@@ -78,7 +78,7 @@ def get_rscript_path(feedback = None):
         rscript_exe = dialog.selectedFiles()[0]
         # Save permanently next to toolbox
         with open(CONFIG_FILE, "w", encoding = "utf-8") as f:
-            json.dump({"rscript_path": chosen}, f)
+            json.dump({"rscript_path": rscript_exe}, f)
         return rscript_exe
     
     return None
