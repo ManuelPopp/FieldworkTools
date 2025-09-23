@@ -54,10 +54,6 @@ def get_unique_filename(folder, base = defaultname, ext = ".kmz"):
         i += 1
     return filename
 
-def loadAlgorithms(self):
-    self.addAlgorithm(CreateFlightplan())
-    self.addAlgorithm(CreateSamplingPlot())
-
 # Classes
 ## Tools------------------------------------------------------------------------
 ### Create flight plan
@@ -163,7 +159,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             self.ALTITUDE,
             "Terrain follow altitude in m",
             type = QgsProcessingParameterNumber.Double,
-            optional = True
+            optional = True,
+            minValue = 10.,
+            maxValue = 100.
         )
         alt_param.setFlags(
             alt_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
@@ -180,7 +178,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             self.TOSECUREALT,
             "Secure take-off altitude in m",
             type = QgsProcessingParameterNumber.Integer,
-            optional = True
+            optional = True,
+            minValue = 10,
+            maxValue = 200
         )
         toalt_param.setFlags(
             toalt_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
@@ -190,7 +190,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             self.WIDTH,
             'Plot sidelength X ("width") in m',
             type = QgsProcessingParameterNumber.Integer,
-            optional = True
+            optional = True,
+            minValue = 10,
+            maxValue = 5000
         )
         width_param.setFlags(
             width_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
@@ -200,7 +202,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             self.HEIGHT,
             'Plot sidelength Y ("height") in m',
             type = QgsProcessingParameterNumber.Integer,
-            optional = True
+            optional = True,
+            minValue = 10,
+            maxValue = 5000
         )
         height_param.setFlags(
             height_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
@@ -210,7 +214,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             self.ANGLE,
             "Rotation angle in degrees",
             type = QgsProcessingParameterNumber.Integer,
-            optional = True
+            optional = True,
+            minValue = 0,
+            maxValue = 360
             )
         angle_param.setFlags(
             angle_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
@@ -220,7 +226,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             self.SLAP,
             "Side overlap fraction",
             type = QgsProcessingParameterNumber.Double,
-            optional = True
+            optional = True,
+            minValue = 0.1,
+            maxValue = 0.9
         )
         slap_param.setFlags(
             slap_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
@@ -229,7 +237,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             self.FLAP,
             "Front overlap fraction",
             type = QgsProcessingParameterNumber.Double,
-            optional = True
+            optional = True,
+            minValue = 0.1,
+            maxValue = 0.9
         )
         flap_param.setFlags(
             flap_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
@@ -239,7 +249,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             self.SPACING,
             "Route spacing in m",
             type = QgsProcessingParameterNumber.Double,
-            optional = True
+            optional = True,
+            minValue = 1.,
+            maxValue = 1000.
         )
         sping_param.setFlags(
             sping_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
@@ -249,7 +261,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             self.BUFFER,
             "Plot buffer in m",
             type = QgsProcessingParameterNumber.Integer,
-            optional = True
+            optional = True,
+            minValue = 0,
+            maxValue = 1000
         )
         buff_param.setFlags(
             buff_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
@@ -259,7 +273,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             self.FLIGHTSPEED,
             "Flight speed in m/s",
             type = QgsProcessingParameterNumber.Double,
-            optional = True
+            optional = True,
+            minValue = 0.1,
+            maxValue = 15.0
         )
         speed_param.setFlags(
             speed_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
@@ -268,7 +284,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             self.IMUCALTIME,
             "Max flight time beteen IMU calibrations in s",
             type = QgsProcessingParameterNumber.Integer,
-            optional = True
+            optional = True,
+            minValue = 10,
+            maxValue = 3600
         )
         imutime_param.setFlags(
             imutime_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
@@ -443,11 +461,12 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         # Create sampling plot plan
         feedback.pushInfo(f"Creating sampling plot\n")
+        plot_output_path = os.path.splitext(full_output_path)[0] + ".kml"
         cmd2 = [
             "python", script_name2,
             "-lat", str(lat),
             "-lon", str(lon),
-            "-dst", full_output_path,
+            "-dst", plot_output_path,
             ]
         if width is not None:
             cmd2.extend(["-dx", str(width)])
