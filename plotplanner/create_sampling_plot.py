@@ -58,7 +58,7 @@ parser.add_argument(
         "Defaults to {defaults.area}."
     )
 parser.add_argument(
-    "--numpoints", "-n", type = int, default = 6,
+    "--numpoints", "-n", type = int, default = 8,
     help = "Number of points to sample within the plot area. Defaults to 8."
     )
 
@@ -211,12 +211,96 @@ def optimal_point_distribution(width, height, N):
                 [3 * width / 4, height / 2],
                 [3 * width / 4, 3 * height / 4]
             ])
-
+    if N == 8:
+        if width > 2 / 3 * height and height > 2 / 3 * width:
+            return np.array([
+                [width / 4, height / 4],
+                [width / 4, height / 2],
+                [width / 4, 3 * height / 4],
+                [width / 2, height / 4],
+                [width / 2, 3 * height / 4],
+                [3 * width / 4, height / 4],
+                [3 * width / 4, height / 2],
+                [3 * width / 4, 3 * height / 4],
+            ])
+        if width >= 2 * height and width < 3 * height:
+            return np.array([
+                [width / 5, height / 3],
+                [width / 5, 2 * height / 3],
+                [2 * width / 5, height / 3],
+                [2 * width / 5, 2 * height / 3],
+                [3 * width / 5, height / 3],
+                [3 * width / 5, 2 * height / 3],
+                [4 * width / 5, height / 3],
+                [4 * width / 5, 2 * height / 3]
+            ])
+        if height >= 2 * width and height < 3 * width:
+            return np.array([
+                [width / 3, height / 5],
+                [width / 3, 2 * height / 5],
+                [width / 3, 3 * height / 5],
+                [width / 3, 4 * height / 5],
+                [2 * width / 3, height / 5],
+                [2 * width / 3, 2 * height / 5],
+                [2 * width / 3, 3 * height / 5],
+                [2 * width / 3, 4 * height / 5]
+            ])
+        if height >= 3 * width:
+            return np.array([
+                [width / 2, height / 9],
+                [width / 2, 2 * height / 9],
+                [width / 2, 3 * height / 9],
+                [width / 2, 4 * height / 9],
+                [width / 2, 5 * height / 9],
+                [width / 2, 6 * height / 9],
+                [width / 2, 7 * height / 9],
+                [width / 2, 8 * height / 9]
+            ])
+        if width >= 3 * height:
+            return np.array([
+                [width / 9, height / 2],
+                [2 * width / 9, height / 2],
+                [3 * width / 9, height / 2],
+                [4 * width / 9, height / 2],
+                [5 * width / 9, height / 2],
+                [6 * width / 9, height / 2],
+                [7 * width / 9, height / 2],
+                [8 * width / 9, height / 2]
+            ])
+    if N == 9:
+        if width > 2 / 3 * height and height > 2 / 3 * width:
+            return np.array([
+                [width / 4, height / 4],
+                [width / 4, height / 2],
+                [width / 4, 3 * height / 4],
+                [width / 2, height / 4],
+                [width / 2, height / 2],
+                [width / 2, 3 * height / 4],
+                [3 * width / 4, height / 4],
+                [3 * width / 4, height / 2],
+                [3 * width / 4, 3 * height / 4],
+            ])
+        else:
+            raise NotImplementedError(
+                "Optimal distribution for N=9 is only implemented for " +
+                "approximately square areas."
+            )
+    
 def get_point_locations(
         longitude, latitude, width, height, N, plotangle,
-        label = "A{i}"
+        label = "{i}{j}"
         ):
     points = optimal_point_distribution(width, height, N)
+    order = np.lexsort((points[:, 0], points[:, 1]))
+    points = points[order]
+    rows, row_ids = np.unique(points[:, 1], return_inverse = True)
+    cols, col_ids = np.unique(points[:, 0], return_inverse = True)
+    row_ids = row_ids.max() - row_ids
+    labels = np.array([
+        label.format(
+            i = chr(ord("A") + r), j = c + 1
+            ) for r, c in zip(row_ids, col_ids)
+        ])
     gdf = gpd.GeoDataFrame(
         data = pd.DataFrame({"id": [1]}),
         geometry = gpd.points_from_xy([longitude], [latitude]),
@@ -243,7 +327,7 @@ def get_point_locations(
             angle = plotangle - 90
             )
     points_gdf = points_utm_gdf.to_crs("EPSG:4326")
-    points_gdf["label"] = [label.format(i = i + 1) for i in range(N)]
+    points_gdf["label"] = labels
 
     return points_gdf
 
