@@ -130,6 +130,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.addParameter(calibimu_param)
         
         # Advanced parameters
+        self.NSAMPLE = "NSAMPLE"
         self.GSD = "GSD"
         self.ALTITUDE = "ALTITUDE"
         self.DSM = "DSM"
@@ -144,7 +145,18 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.FLIGHTSPEED = "FLIGHTSPEED"
         self.IMUCALTIME = "IMUCALTIME"
         self.SCANMODE = "SCANMODE"
-
+        
+        nsample_param = QgsProcessingParameterNumber(
+            self.NSAMPLE,
+            "Number of sampling locations within the plot",
+            type = QgsProcessingParameterNumber.Integer,
+            optional = True,
+            minValue = 1,
+            maxValue = 9
+        )
+        nsample_param.setFlags(
+            nsample_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
+            )
         gsd_param = QgsProcessingParameterNumber(
             self.GSD,
             "Ground sampling distance in cm",
@@ -275,7 +287,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             type = QgsProcessingParameterNumber.Double,
             optional = True,
             minValue = 0.1,
-            maxValue = 15.0
+            maxValue = 15.
         )
         speed_param.setFlags(
             speed_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
@@ -300,6 +312,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             scanmode_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
             )
         
+        self.addParameter(nsample_param)
         self.addParameter(gsd_param)
         self.addParameter(alt_param)
         self.addParameter(dsm_param)
@@ -328,6 +341,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         point_wgs84 = transform.transform(point)
         
         # Advanced parameters
+        nsample = self.parameterAsInt(parameters, self.NSAMPLE, context)
         gsd = self.parameterAsDouble(parameters, self.GSD, context)
         alt = self.parameterAsDouble(parameters, self.ALTITUDE, context)
         dsm_layer = self.parameterAsRasterLayer(parameters, self.DSM, context)
@@ -474,6 +488,20 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             cmd2.extend(["-dy", str(height)])
         if isinstance(angle_deg, (int, float)):
             cmd2.extend(["-ra", str(angle_deg)])
+        
+        # DEFAULT BEHAVIOUR: Use N=9 for (approx.) square plots, else N=8
+        if width is None and height is None:
+            width = height = 100
+        if width is None:
+            width = 10000 / height
+        if height is None:
+            height = 10000 / width
+        if self.parameterAsInt(parameters, self.NSAMPLE, context):
+            cmd2.extend(["-n", str(nsample)])
+        elif width > 2 / 3 * height and height > 2 / 3 * width:
+            cmd2.extend(["-n", "9"])
+        else:
+            cmd2.extend(["-n", "8"])
         
         try:
             result1 = subprocess.run(
