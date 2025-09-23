@@ -491,8 +491,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             raise e
         
         with open(
-            os.path.join(out_dir, "report.txt"
-            ), "w", encoding = "utf-8") as f:
+            os.path.splitext(full_output_path)[0] + "_report.txt",
+            "w", encoding = "utf-8"
+            ) as f:
             f.write(result0.stdout)
         
         # Open output folder
