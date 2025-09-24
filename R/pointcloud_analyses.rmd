@@ -1,0 +1,173 @@
+---
+title: "LiDAR Tree Metrics Report"
+author: "Manuel Popp"
+date: "`r Sys.Date()`"
+output: html_document
+params:
+  src: "D:/tmp/ALT40rtfSLAP70doublegrid_cropped.las"
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r Load packages, results='hide'}
+require("sf")
+require("raster")
+require("terra")
+require("tidyterra")
+require("lidR")
+require("ggplot2")
+require("dplyr")
+
+```
+```{r Load data and identify trees, results='hide'}
+las <- lidR::readLAS(params$src)
+
+las_ground_terra = lidR::filter_poi(las, Classification == 2)
+#las_ground_csf <- lidR::classify_ground(
+#  las, algorithm = lidR::csf(), last_returns = TRUE
+#  ) %>%
+#  lidR::filter_poi(Classification == 2)
+
+#plot(las_ground_terra)
+#plot(las_ground_csf)
+
+# Recommendations for CHM algorithm
+# High density: lidR::pitfree()
+# Low to medium density: lidR::p2r()
+# lidr::p2r() worked well for Rameren forest
+chm = lidR::rasterize_canopy(las, res = 0.5, lidR::p2r())
+ttops <- lidR::locate_trees(las, lidR::lmf(ws = 5))
+
+las_trees <- lidR::segment_trees(
+  las, algorithm = lidR::dalponte2016(
+    chm = chm, treetops = ttops, th_tree = 3, th_seed = 0.45
+    ),
+  attribute = "treeID"
+  )
+
+```
+
+Point cloud statistics
+
+```{r}
+n_p <- nrow(las)
+n_gp <- nrow(las_ground_terra)
+f_gp <- round(n_gp / n_p * 100, 2)
+cat(
+  "Total points:", n_p,
+  "\nGround points:", n_gp, "(ca.", f_gp, "%)"
+)
+
+```
+
+```{r Compute metrics, results='hide'}
+# Normalise height (subtract DEM)
+# Recommendations:
+# Normal terrain: lidR::knnidw()
+# Rugged terrain: lidR::tin()
+las_norm = lidR::normalize_height(las_trees, algorithm = lidR::knnidw())
+
+metrics = lidR::tree_metrics(
+  las_norm,
+  func = ~list(
+    height = max(Z),
+    n_points = length(Z)
+  ),
+  attribute = "treeID"
+  )
+
+tree_ids = sort(na.omit(unique(las_norm$treeID)))
+
+cat("Estimating tree crown diameters...\n")
+crown_diameters = vapply(
+  tree_ids,
+  function(id) {
+    tree = lidR::filter_poi(las_norm, treeID == id)
+    xy = cbind(tree$X, tree$Y)
+    centroid = colMeans(xy)
+    dists = sqrt((xy[,1] - centroid[1])^2 + (xy[,2] - centroid[2])^2)
+    radius = quantile(dists, 0.99)
+    2 * radius
+  },
+  FUN.VALUE = numeric(1)
+)
+
+metrics$crown_diameter <- crown_diameters
+
+names(crown_diameters) <- tree_ids
+ttops$diameter <- crown_diameters[as.character(ttops$treeID)]
+ttops$diameter[which(is.na(ttops$diameter))] <- 0
+
+names(metrics$height) <- tree_ids
+ttops$height <- metrics$height[as.character(ttops$treeID)]
+ttops$height[is.na(ttops$height)] <- 0
+
+ttops_poly <- sf::st_buffer(ttops, dist = ttops$diameter / 2) %>%
+  dplyr::filter(height > 3)
+
+```
+
+Vegetation statistics
+
+```{r, Print outputs}
+cat(
+  "Estimated number of trees:", length(tree_ids),
+  "\nAverage height:", mean(metrics$height), "m",
+  "\nMedian diameter:", median(metrics$crown_diameter), "m"
+  )
+
+```
+
+
+Canopy height model
+
+```{r Plot canopy height model, fig.show='hold'}
+plot(raster::raster(chm), col = height.colors(50))
+plot(sf::st_geometry(ttops_poly), add = TRUE, border = "black")
+#plot(las_trees, color = "treeID")
+
+```
+
+Tree-level histograms
+
+```{r Plot tree-level histograms}
+par(mfrow = c(1, 2))
+hist(
+  metrics$height,
+  main = "Tree height distribution",
+  xlab = "Crown diameter in m",
+  col = "forestgreen"
+  )
+hist(
+  metrics$crown_diameter,
+  main = "Crown diameter distribution",
+  xlab = "Crown diameter in m",
+  col = "forestgreen"
+  )
+
+par(mfrow = c(1, 1))
+
+```
+```{r Create point density histogram}
+gg_hist <- ggplot2::ggplot(
+  data = las_norm@data,
+  ggplot2::aes(x = Z),
+  main = tools::file_path_sans_ext(base::basename(src))
+  ) +
+  ggplot2::geom_histogram(
+    binwidth = 3, fill = "forestgreen", color = "black"
+    ) +
+  ggplot2::labs(x = "Tree height in m", y = "Point Density") +
+  ggplot2::theme_bw() +
+  ggplot2::coord_flip()
+
+```
+
+Canopy density distribution
+
+```{r Plot point density histogram}
+plot(gg_hist)
+
+```
