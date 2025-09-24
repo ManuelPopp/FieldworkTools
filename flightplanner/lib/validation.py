@@ -39,7 +39,7 @@ def validate_args(args):
             )
         """
         c1, c2 = args.coefficients_sol
-        args.sideoverlap = (args.spacing / (args.altitude * 100) - c2) / c1
+        args.sideoverlap = ((args.spacing / args.altitude) - c2) / c1 / 100
         warn(
             "Spacing set by user. This will override the side overlap. " +
             f"Side overlap is now {args.sideoverlap}."
