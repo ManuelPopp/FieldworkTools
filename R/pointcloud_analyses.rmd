@@ -97,11 +97,11 @@ crown_diameters = vapply(
 metrics$crown_diameter <- crown_diameters
 
 names(crown_diameters) <- tree_ids
+ttops <- dplyr::filter(ttops, treeID %in% tree_ids)
 ttops$diameter <- crown_diameters[as.character(ttops$treeID)]
 ttops$diameter[which(is.na(ttops$diameter))] <- 0
 
-names(metrics$height) <- tree_ids
-ttops$height <- metrics$height[as.character(ttops$treeID)]
+ttops$height <- metrics$height[match(metrics$treeID, ttops$treeID)]
 ttops$height[is.na(ttops$height)] <- 0
 
 ttops_poly <- sf::st_buffer(ttops, dist = ttops$diameter / 2) %>%
@@ -128,8 +128,7 @@ ggplot2::ggplot() +
   tidyterra::geom_spatraster(data = chm) +
   ggplot2::scale_fill_viridis_c(na.value = "transparent") +
   ggplot2::geom_sf(data = ttops_poly, fill = NA, color = "black") +
-  ggplot2::geom_sf(data = las_trees, shape = 3) +
-  ggplot2::coord_equal() +
+  ggplot2::geom_sf(data = ttops) +
   ggplot2::theme_minimal()
 #plot(las_trees, color = "treeID")
 
