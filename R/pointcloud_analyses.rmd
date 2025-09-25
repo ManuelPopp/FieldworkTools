@@ -125,7 +125,7 @@ Canopy height model
 
 ```{r Plot canopy height model, fig.show='hold'}
 ggplot2::ggplot() +
-  ggplot2::geom_spatraster(data = chm) +
+  tidyterra::geom_spatraster(data = chm) +
   ggplot2::scale_fill_viridis_c(na.value = "transparent") +
   ggplot2::geom_sf(data = ttops_poly, fill = NA, color = "black") +
   ggplot2::geom_sf(data = las_trees, shape = 3) +
