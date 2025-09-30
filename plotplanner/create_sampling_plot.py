@@ -61,6 +61,10 @@ parser.add_argument(
     "--numpoints", "-n", type = int, default = 8,
     help = "Number of points to sample within the plot area. Defaults to 8."
     )
+parser.add_argument(
+    "--addgpx", "-gpx", action = "store_true",
+    help = "Enable additional GPX output."
+    )
 
 args = parser.parse_args()
 
@@ -394,5 +398,25 @@ if __name__ == "__main__":
         combined = combined.rename(columns = {"label": "Name"})
         combined["Name"] = combined["Name"].astype(str)
         combined[["Name", "geometry"]].to_file(dst, driver = "KML")
+    if args.addgpx:
+        print("Writing additional GPX output...")
+        points_gpx = points.rename(columns = {"label": "name"})
+        points_gpx["name"] = points_gpx["name"].astype(str)
+        points_gpx["ele"] = 0
+        points_gpx["time"] = time.strftime(
+            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+            )
+        points_gpx["magvar"] = 0
+        points_gpx["geoidheight"] = 0
+        points_gpx = points_gpx[
+            ["geometry", "ele", "time", "magvar", "geoidheight", "name"]
+            ]
+        dst_gpx = os.path.splitext(args.destfile)[0] + ".gpx"
+        points_gpx.to_file(
+            dst_gpx,
+            driver = "GPX",
+            layer = "waypoints",
+            **{"GPX_USE_EXTENSIONS": "YES"}
+            )
 
     print(f"Output written to {dst}.")

@@ -71,14 +71,14 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterPoint(
                 self.LATLON,
-                "Location (click on map or enter lat/lon)",
+                "Location (click on map or enter in project CRS)",
                 defaultValue = None
             )
         )
         self.addParameter(
             QgsProcessingParameterPoint(
                 self.LATLON2,
-                "Additional location (click on map or enter lat/lon)",
+                "Additional location (click on map or enter in project CRS)",
                 defaultValue = "",
                 optional = True
             )
@@ -331,8 +331,12 @@ class CreateFlightplan(QgsProcessingAlgorithm):
     def processAlgorithm(self, parameters, context, feedback):
         # Main parameters
         sensor = self.parameterAsString(parameters, self.SENSOR, context)
-        point = self.parameterAsPoint(parameters, self.LATLON, context)
-        point2 = self.parameterAsPoint(parameters, self.LATLON2, context)
+        point = self.parameterAsPoint(
+        parameters, self.LATLON, context
+        )
+        point2 = self.parameterAsPoint(
+        parameters, self.LATLON2, context
+        )
         source_crs = context.project().crs()
         target_crs = QgsCoordinateReferenceSystem("EPSG:4326")
         transform = QgsCoordinateTransform(
