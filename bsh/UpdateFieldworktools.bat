@@ -68,7 +68,7 @@ echo [OK] croplas.py copied.
 set "GITROOT_PY=%GITROOT:\=/%"
 
 :: Define the PowerShell replacement command
-set "REPLACEMENT=script_dir = \"%GITROOT_PY%/FieldworkTools/flightplanner""
+set "REPLACEMENT=script_dir = \"%GITROOT_PY%/FieldworkTools/flightplanner\"
 
 echo Updating script_dir path inside all scripts...
 
