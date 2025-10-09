@@ -507,6 +507,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         else:
             cmd2.extend(["-n", "8"])
         
+        cmd2.append("-gpx")
+        
+        feedback.pushInfo(f"Running command: {' '.join(cmd2)}\n")
         try:
             result1 = subprocess.run(
             cmd2,
