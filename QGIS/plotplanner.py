@@ -71,7 +71,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterPoint(
                 self.LATLON,
-                "Location (click on map or enter in project CRS)",
+                "Location (lon,lat resp. x,y; click on map or enter in project CRS)",
                 defaultValue = None
             )
         )
