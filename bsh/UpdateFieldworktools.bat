@@ -8,12 +8,14 @@ set "GITROOT=C:\Users\dme\git"
 set "SRC_PLOTPLANNER=%GITROOT%\FieldworkTools\QGIS\plotplanner.py"
 set "SRC_MERGELAS=%GITROOT%\FieldworkTools\QGIS\mergelas.py"
 set "SRC_CROPLAS=%GITROOT%\FieldworkTools\QGIS\croplas.py"
+set "SRC_DLDDEM=%GITROOT%\FieldworkTools\QGIS\downloaddem.py"
 
 :: Define destination script directory
 set "DESTDIR=C:\Users\dme\AppData\Roaming\QGIS\QGIS3\profiles\default\processing\scripts"
 set "DEST_PLOTPLANNER=%DESTDIR%\plotplanner.py"
 set "DEST_CROPLAS=%DESTDIR%\croplas.py"
 set "DEST_MERGELAS=%DESTDIR%\mergelas.py"
+set "DEST_DLDDEM=%DESTDIR%\downloaddem.py"
 
 :: Go to repo directory
 pushd "%GITROOT%\FieldworkTools"
@@ -63,6 +65,17 @@ IF %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 echo [OK] croplas.py copied.
+
+:: Copy downloaddem.py
+echo Copying downloaddem.py...
+copy /y "%SRC_DLDDEM%" "%DEST_DLDDEM%" >nul
+IF %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] Failed to copy downloaddem.py
+    pause
+    popd
+    exit /b 1
+)
+echo [OK] downloaddem.py copied.
 
 :: Convert backslashes to forward slashes for use in Python-compatible string
 set "GITROOT_PY=%GITROOT:\=/%"
