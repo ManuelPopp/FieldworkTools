@@ -32,8 +32,8 @@ def interpolate_waypoints(wp0, wp1, num_wpts):
     coords_wp1 = wp1.coordinates_utm
     x_values = np.linspace(coords_wp0[0], coords_wp1[0], num_wpts + 2)[1:-1]
     y_values = np.linspace(coords_wp0[1], coords_wp1[1], num_wpts + 2)[1:-1]
-    altitudes = [wp0.altitude] * num_wpts
-    velocities = [wp0.velocity] * num_wpts
+    altitudes = np.linspace(wp0.altitude, wp1.altitude, num_wpts + 2)[1:-1]
+    velocities = np.linspace(wp0.velocity, wp1.velocity, num_wpts + 2)[1:-1]
     
     intermediate_waypoints = []
     for x, y, alt, vel in zip(x_values, y_values, altitudes, velocities):

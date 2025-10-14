@@ -204,7 +204,7 @@ def segment_altitude(
         wpt0,
         wpt1,
         altitude_agl,
-        horizontal_safety_buffer_m = 10.
+        horizontal_safety_buffer_m = 20.
     ):
     try:
         segment_coords = [wpt.coordinates for wpt in [wpt0, wpt1]]
@@ -233,11 +233,28 @@ def segment_altitude(
                 "Input raster CRS is not EPSG:4326. CRS transformation is not implemented."
             )
         dsm_file_masked, _ = mask.mask(
-            dsm_file, shapes, crop = True, indexes = 1
+            dsm_file, shapes,
+            crop = True,
+            indexes = 1,
+            all_touched = True
             )
-        dsm_file_masked[dsm_file_masked == dsm_file.nodatavals] = np.nan
-
+        dsm_file_masked = dsm_file_masked.astype(float)
+        if isinstance(dsm_file.nodatavals, (tuple, list)):
+            for nd in dsm_file.nodatavals:
+                if nd is not None and np.isfinite(nd):
+                    dsm_file_masked[np.isclose(dsm_file_masked, nd)] = np.nan
+        else:
+            dsm_file_masked[
+                np.isclose(dsm_file_masked, dsm_file.nodatavals)
+                ] = np.nan
+    
     segment_max_elevation = np.nanmax(dsm_file_masked)
+    if np.isnan(segment_max_elevation):
+        raise ValueError(
+            "No DSM data found along the flight segment between " +
+            f"{wpt0.coordinates} and {wpt1.coordinates}. " +
+            "Cannot determine flight altitude."
+            )
 
     # Provide additional safety in case of IMU calibration
     if wpt0.perform_imu_calibration:
@@ -258,13 +275,38 @@ def segment_altitude(
             ).to_crs("EPSG:4326")[0]
         with rasterio.open(dsm_path) as dsm_file:
             dsm_file_masked, _ = mask.mask(
-                dsm_file, [mapping(polygon_4326)], crop = True, indexes = 1)
-            dsm_file_masked[dsm_file_masked == dsm_file.nodatavals] = np.nan
+                dsm_file, [mapping(polygon_4326)],
+                crop = True,
+                indexes = 1,
+                all_touched = True
+                )
+            dsm_file_masked = dsm_file_masked.astype(float)
+            if isinstance(dsm_file.nodatavals, (tuple, list)):
+                for nd in dsm_file.nodatavals:
+                    if nd is not None and np.isfinite(nd):
+                        dsm_file_masked[np.isclose(dsm_file_masked, nd)] = np.nan
+            else:
+                dsm_file_masked[
+                    np.isclose(dsm_file_masked, dsm_file.nodatavals)
+                    ] = np.nan
             circle_max_elevation = np.nanmax(dsm_file_masked)
         
         segment_max_elevation = np.nanmax([
             segment_max_elevation, circle_max_elevation
             ])
+    if np.isnan(segment_max_elevation):
+        raise ValueError(
+            "No DSM data found along the flight segment between " +
+            f"{wpt0.coordinates} and {wpt1.coordinates}, " +
+            "nor in the IMU calibration area around " +
+            f"{wpt0.coordinates}. Cannot determine flight altitude."
+            )
+    if segment_max_elevation <= 0.0:
+        warn(
+            "Maximum DSM elevation along the flight segment and " +
+            "in the IMU calibration area is <= zero. This seems " +
+            "unlikely. Please check your DSM data."
+            )
     
     waypoint_altitude = segment_max_elevation + altitude_agl
     
@@ -300,6 +342,15 @@ def waypoint_altitude(dsm_path, wpt, altitude_agl = 0.0):
     if dsm_value == src.nodata:
         raise ValueError(f"No DSM data at location {coordinates}")
     
+    if np.isnan(dsm_value):
+        raise ValueError(f"DSM value is NaN at location {coordinates}")
+    
+    if dsm_value <= 0:
+        warn(
+            f"DSM value is ({dsm_value} m) at location " +
+            f"{coordinates}. This seems unlikely. Check DSM data."
+            )
+    
     altitude = dsm_value + altitude_agl
-
+    
     return altitude

@@ -374,6 +374,16 @@ class Mission():
                 horizontal_safety_buffer_m = self.args.safetybuffer
             )
             wp0.set_altitude(altitude)
+        # Set altitude for last waypoint
+        self.waypoints[-1].set_altitude(
+            segment_altitude(
+                dsm_path = self.args.dsm_path,
+                wpt0 = self.waypoints[-2],
+                wpt1 = self.waypoints[-1],
+                altitude_agl = self.args.altitude,
+                horizontal_safety_buffer_m = self.args.safetybuffer
+            )
+        )
     
     def add_heading_angles(self):
         if len(self.waypoints) < 2:
