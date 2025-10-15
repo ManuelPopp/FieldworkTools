@@ -222,19 +222,21 @@ class Mission():
                 "No grid points were generated. " +
                 "Check input geometry and parameters."
                 )
-        last_point = Point(grid.iloc[-1,].x, grid.iloc[-1,].y)
-        corner_idx = self.plot_gdf_buff.distance(last_point).idxmin()
-        x, y = self.plot_gdf_buff.get_coordinates().iloc[corner_idx]
-        grid = pd.concat(
-            [
-                grid,
-                pd.DataFrame({
-                    "x" : [x, self.args.longitude],
-                    "y" : [y, self.args.latitude]
-                    })
-                ],
-            ignore_index = True
-            )
+        # Add diagonal to centre for RGB/MS mapping
+        if self.args.sensor.lower() == "m3m":
+            last_point = Point(grid.iloc[-1,].x, grid.iloc[-1,].y)
+            corner_idx = self.plot_gdf_buff.distance(last_point).idxmin()
+            x, y = self.plot_gdf_buff.get_coordinates().iloc[corner_idx]
+            grid = pd.concat(
+                [
+                    grid,
+                    pd.DataFrame({
+                        "x" : [x, self.args.longitude],
+                        "y" : [y, self.args.latitude]
+                        })
+                    ],
+                ignore_index = True
+                )
         grid[["velocity"]] = self.args.flightspeed
         grid[["altitude"]] = self.args.altitude
 
@@ -260,19 +262,21 @@ class Mission():
                 "No grid points were generated. " +
                 "Check input geometry and parameters."
                 )
-        last_point = Point(grid.iloc[-1,].x, grid.iloc[-1,].y)
-        corner_idx = self.plot_gdf_buff.distance(last_point).idxmin()
-        x, y = self.plot_gdf_buff.get_coordinates().iloc[corner_idx]
-        grid = pd.concat(
-            [
-                grid,
-                pd.DataFrame({
-                    "x" : [x, self.args.longitude],
-                    "y" : [y, self.args.latitude]
-                    })
-                ],
-            ignore_index = True
-            )
+        # Add diagonal to centre for RGB/MS mapping
+        if self.args.sensor.lower() == "m3m":
+            last_point = Point(grid.iloc[-1,].x, grid.iloc[-1,].y)
+            corner_idx = self.plot_gdf_buff.distance(last_point).idxmin()
+            x, y = self.plot_gdf_buff.get_coordinates().iloc[corner_idx]
+            grid = pd.concat(
+                [
+                    grid,
+                    pd.DataFrame({
+                        "x" : [x, self.args.longitude],
+                        "y" : [y, self.args.latitude]
+                        })
+                    ],
+                ignore_index = True
+                )
         grid[["velocity"]] = self.args.flightspeed
         grid[["altitude"]] = self.args.altitude
 
@@ -324,6 +328,9 @@ class Mission():
             StartLiDARMapping,
             action_trigger_param = self.action_trigger_param
             )
+        self.waypoints[-1].add_action_group(StopRecordPointCloud)
+        self.waypoints[-1].add_action_group(PrepareObliqueLiDARMapping)
+        '''
         self.waypoints[-3].add_action_group(StopRecordPointCloud)
         self.waypoints[-2].add_action_group(PrepareObliqueLiDARMapping)
         self.waypoints[-2].add_action_group(
@@ -331,6 +338,7 @@ class Mission():
             action_trigger_param = self.action_trigger_param
             )
         self.waypoints[-2].add_action_group(StopObliqueLiDARMapping)
+        '''
     
     def waypoint_altitudes_from_dsm(self):
         if self.args.altitudetype.lower() == "rtf":

@@ -1,0 +1,24 @@
+      <Placemark>
+        <Point>
+          <coordinates>
+            {LONGITUDE},{LATITUDE}
+          </coordinates>
+        </Point>
+        <wpml:index>{INDEX}</wpml:index>
+        <wpml:executeHeight>{EXECALTITUDE}</wpml:executeHeight>
+        <wpml:waypointSpeed>{WPSPEED}</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>{HEADINGMODE}</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>{HEADINGANGLE}</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>{HEADING_ANGLE_ENABLE}</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+          <wpml:waypointHeadingPoiIndex>0</wpml:waypointHeadingPoiIndex>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>{TURNMODE}</wpml:waypointTurnMode>
+          <wpml:waypointTurnDampingDist>{TURN_DAMPING_DISTANCE}</wpml:waypointTurnDampingDist>
+        </wpml:waypointTurnParam>
+        <wpml:useStraightLine>{USE_STRAIGHT_LINES}</wpml:useStraightLine>
+{ACTIONS}
+      </Placemark>
