@@ -28,7 +28,7 @@ class GetDEMFromOpenTopography(QgsProcessingAlgorithm):
                 "DEM_TYPE",
                 "DEM type",
                 options = self.dem_options,
-                defaultValue = self.dem_options.index("AW3D30")
+                defaultValue = self.dem_options.index("AW3D30_E")
             )
         )
         self.addParameter(

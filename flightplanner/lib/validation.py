@@ -53,7 +53,7 @@ def validate_args(args):
 
     ## Compute a default buffer value if not set
     if args.buffer is None:
-        args.buffer = args.spacing / 2
+        args.buffer = args.spacing / 1.9 # 1.9 to avoid dropping last line
 
     args.buffer = int(round(args.buffer))
 
