@@ -164,17 +164,28 @@ class Photo(Action):
             "useGlobalPayloadLensIndex" : 0
         }
         
-        self.params = {"payloadPositionIndex" : 0}
+        self.params = {
+            "payloadPositionIndex" : 0,
+            "useGlobalPayloadLensIndex" : 0
+            }
         self.params.update(kwargs)
         self.check()
 
 class Pitch(Action):
     def __init__(self, action_group, **kwargs):
         super().__init__(action_group)
-        self.name = "gimbalEvenlyRotate"
+        self.name = "gimbalRotate"
         self.default = self.params = {
-            "gimbalPitchRotateAngle" : int(0),
+            "gimbalHeadingYawBase" : str("aircraft"),
+            "gimbalRotateMode" : "absoluteAngle",
+            "gimbalPitchRotateEnable" : int(1),
+            "gimbalPitchRotateAngle" : 0.0,
+            "gimbalRollRotateEnable" : int(0),
             "gimbalRollRotateAngle" : int(0),
+            "gimbalYawRotateEnable" : int(0),
+            "gimbalYawRotateAngle" : int(0),
+            "gimbalRotateTimeEnable" : int(0),
+            "gimbalRotateTime" : int(0),
             "payloadPositionIndex" : int(0)
             }
         self.params.update(kwargs)
@@ -184,6 +195,7 @@ class Pitch(Action):
     def new(cls, action_group, angle):
         return cls(
             action_group = action_group,
+            gimbalPitchRotateEnable = int(1),
             gimbalPitchRotateAngle = angle
         )
 

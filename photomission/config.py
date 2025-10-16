@@ -17,11 +17,18 @@ class Config:
     waypoint_template: str = os.path.join(
         ".", "templates", "placemark.template"
         )
+    action_template: str = os.path.join(
+        ".", "templates", "action.template"
+    )
+    action_group_template: str = os.path.join(
+        ".", "templates", "actiongroup.template"
+    )
 
 @dataclass
 class Defaults(Config):
     slot: int = 0
     flightaltitude: float = 60
+    minimum_flightaltitude: float = 20
     photoaltitude: float = 10
     template_directory: str = os.path.join(".", "templates")
     safetybuffer: float = 10.0

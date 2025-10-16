@@ -27,19 +27,12 @@ def write_wayline_wpml(
         destfile
         ):
     placemarks = []
-    action_group_index = 0
-    action_index = 0
 
     for index, wpt in enumerate(waypoints):
         out_xml = wpt.to_xml(
             template_file = waypoint_template,
-            action_group_id = action_group_index,
-            action_id_start_index = action_index,
             index = index
             )
-        
-        if wpt.has_actiongroup:
-            action_group_index += wpt.num_action_groups
         
         placemarks.append(out_xml)
     

@@ -30,9 +30,12 @@ class Waypoint():
         self.wp_type = wp_type
         self.actions = [] if actions is None else actions
         self.mission = mission
+        self.altitude_adjusted = False
     
     @property
     def index(self):
+        if hasattr(self, "_index") and self._index is not None:
+            return self._index
         if hasattr(self.mission, "waypoints"):
             return self.mission.waypoints.index(self)
         return None
@@ -76,6 +79,10 @@ class Waypoint():
     @property
     def num_action_groups(self):
         return len(self.actions)
+    
+    @property
+    def num_actions(self):
+        return sum([len(ag.actions) for ag in self.actions])
 
     def __repr__(self):
         tpl = "Waypoint\n{c}, alt: {a} m, v: {v} m/s\nactions: {act}\n"
@@ -87,15 +94,15 @@ class Waypoint():
         )
     
     def compile_actions(
-            self, action_group_id, action_start_index
+            self, action_start_index
             ):
         action_xmls = []
-        for action_group in self.actions:
+        for group_index, action_group in enumerate(self.actions):
             action_xml_i = compile_action_group(
-                action_group_id = action_group_id,
+                action_group_id = group_index + 1, # action group IDs start at 1
                 action_id_start_index = action_start_index,
                 action_group = action_group,
-                mode = "sequence"
+                mode = "parallel"
             )
             action_xmls.append(action_xml_i)
         
@@ -151,7 +158,7 @@ class Waypoint():
         self.heading_angle_enable = 0
    
     def to_xml(
-            self, action_group_id, action_id_start_index,
+            self,
             template_file, index = None
             ):
         with open(template_file, "r") as placemark_template:
@@ -168,9 +175,8 @@ class Waypoint():
                 TURN_DAMPING_DISTANCE = self.turn_damping_dist,
                 USE_STRAIGHT_LINES = int(self.use_straight),
                 HEADING_ANGLE_ENABLE = int(self.heading_angle_enable),
-                ACTIONS = self.compile_actions(
-                    action_group_id, action_id_start_index
-                    )
+                ACTIONS = self.compile_actions(self.action_start_index),
+                GIMBALPITCH = self.pitch if hasattr(self, "pitch") else 0
             )
         
         return new_placemark

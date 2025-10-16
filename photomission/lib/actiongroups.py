@@ -7,7 +7,7 @@ config = Config()
 # Functions
 def compile_action_group(
         action_group_id, action_id_start_index,
-        mode, action_group
+        action_group, mode = "parallel"
         ):
     
     with open(

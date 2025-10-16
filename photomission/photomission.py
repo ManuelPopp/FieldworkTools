@@ -34,6 +34,11 @@ parser.add_argument(
     help = "Flight altitude between photo locations."
     )
 parser.add_argument(
+    "--minimum_flightaltitude", "-mflalt", type = float,
+    default = defaults.minimum_flightaltitude,
+    help = "Minimum flight altitude between photo locations (relative to DSM)."
+    )
+parser.add_argument(
     "--photoaltitude", "-phalt", type = float,
     default = defaults.photoaltitude,
     help = "Photo altitude."
@@ -45,6 +50,16 @@ parser.add_argument(
 parser.add_argument(
     "--poi_path", "-poi", type = str,
     help = "Path to the point location file."
+    )
+parser.add_argument(
+    "--takeoff_latitude", "-tolat", type = float,
+    default = None,
+    help = "Latitude of the takeoff location."
+    )
+parser.add_argument(
+    "--takeoff_longitude", "-tolon", type = float,
+    default = None,
+    help = "Longitude of the takeoff location."
     )
 parser.add_argument(
     "--out_dir", "-out", type = str,

@@ -21,4 +21,8 @@
         </wpml:waypointTurnParam>
         <wpml:useStraightLine>{USE_STRAIGHT_LINES}</wpml:useStraightLine>
 {ACTIONS}
+        <wpml:waypointGimbalHeadingParam>
+          <wpml:waypointGimbalPitchAngle>{GIMBALPITCH}</wpml:waypointGimbalPitchAngle>
+          <wpml:waypointGimbalYawAngle>0</wpml:waypointGimbalYawAngle>
+        </wpml:waypointGimbalHeadingParam>
       </Placemark>

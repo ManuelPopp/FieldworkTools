@@ -331,26 +331,50 @@ def waypoint_altitude(dsm_path, wpt, altitude_agl = 0.0):
         The calculated altitude for the waypoint.
     """
     coordinates = wpt.coordinates
+    try:
+        lon, lat = coordinates
+    except Exception:
+        raise ValueError(f"Invalid waypoint coordinates: {coordinates}")
+    
+    point = gpd.GeoDataFrame(
+        geometry = [Point(lon, lat)], crs = "EPSG:4326"
+        )
+    
+    utm_zone = wpt.utm_crs
 
+    point_utm = point.to_crs(utm_zone)
+    buffered_point_utm = point_utm.buffer(2)
+    buffered_point = buffered_point_utm.to_crs("EPSG:4326")
+    buffered_point_4326 = gpd.GeoSeries(
+        buffered_point_utm, crs = utm_zone
+        ).to_crs("EPSG:4326")
+    shapes = [mapping(geom) for geom in buffered_point_4326]
+    
     with rasterio.open(dsm_path) as src:
         if not src.crs.is_geographic:
             raise NotImplementedError(
                 "Input raster CRS is not EPSG:4326. CRS transformation is not implemented."
             )
-        dsm_value = list(src.sample([coordinates]))[0][0]
-        
-        if dsm_value == src.nodata:
+        dsm_file_masked, _ = mask.mask(
+                src, shapes,
+                crop = True,
+                indexes = 1,
+                all_touched = True
+                )
+        dsm_file_masked = dsm_file_masked.astype(float)
+        circle_max_elevation = np.nanmax(dsm_file_masked)
+        if np.isclose(circle_max_elevation, src.nodata):
             raise ValueError(f"No DSM data at location {coordinates}")
     
-    if np.isnan(dsm_value):
+    if np.isnan(circle_max_elevation):
         raise ValueError(f"DSM value is NaN at location {coordinates}")
     
-    if dsm_value <= 0:
+    if circle_max_elevation <= 0:
         warn(
-            f"DSM value is ({dsm_value} m) at location " +
+            f"DSM value is ({circle_max_elevation} m) at location " +
             f"{coordinates}. This seems unlikely. Check DSM data."
             )
     
-    altitude = dsm_value + altitude_agl
+    altitude = circle_max_elevation + altitude_agl
     
     return altitude

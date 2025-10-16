@@ -25,10 +25,10 @@ In the terminal, change directory to this repository.
 From there, run the command with the following syntax:
 
 ```
-python photomission.py --slot i -dsm "/path/to/dsm.tif" --poi_path "/path/to/points.gpkg" -out "/output/directory"
+python photomission.py --slot i -dsm "/path/to/dsm.tif" --poi_path "/path/to/points.gpkg" -out "/output/directory" -tolat yy.yyyy -tolon xx.xxxx --flightaltitude A
 ```
 
-where `i` is the index of the mission slot you want to use.  
+where `i` is the index of the mission slot you want to use, `xx.xxxx` is the latuitude of the takeoff location, `yy.yyyy` is the longitiude of the takeoff location, and  `A` is the flight altitude between photo points.  
 All spatial data must be in **EPSG:4326**.
 
 ---

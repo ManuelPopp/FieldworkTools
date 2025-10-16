@@ -22,13 +22,11 @@ from matplotlib import pyplot as plt
 
 from lib.utils import get_heading_angle
 from lib.io import write_template_kml, write_wayline_wpml, copy_dsm
+from lib.waypointgroups import Photogroup
 from lib.waypoints import Waypoint
 from lib.geo import (
     waypoint_distance, segment_duration, waypoint_altitude, segment_altitude
 )
-from lib.actiongroups import (
-    PhotoActionGroup
-    )
 
 from config import Config
 
@@ -43,9 +41,10 @@ class Mission():
             self.mission_slot,
             f"{self.mission_slot}.kmz"
             )
-        self.args.altitudetype = "dsm"
+        self.args.altitudetype = "relative"
         self.args.wpturnmode = "toPointAndStopWithContinuityCurvature"
         self.template_kml_directory = config.template_kml_directory
+        self._takeoff_altitude = None
     
     @property
     def distance(self):
@@ -72,6 +71,32 @@ class Mission():
         if self.args.altitudetype == "dsm":
             return "WGS84"
     
+    @property
+    def takeoff_altitude(self):
+        if self._takeoff_altitude is None:
+            if self.args.takeoff_latitude is None \
+                or self.args.takeoff_longitude is None:
+                raise ValueError(
+                    "Takeoff latitude and longitude must be provided."
+                    )
+            if not os.path.isfile(self.args.dsm_path):
+                raise ValueError("DSM file not found.")
+            takeoff_wpt = Waypoint(
+                coordinates = (
+                    self.args.takeoff_longitude, self.args.takeoff_latitude
+                    ),
+                altitude = None,
+                velocity = 0,
+                wp_type = "takeoff"
+                )
+            altitude = waypoint_altitude(
+                dsm_path = self.args.dsm_path,
+                wpt = takeoff_wpt,
+                altitude_agl = 0.0
+                )
+            self._takeoff_altitude = altitude
+        return self._takeoff_altitude
+
     # Waypoints---------------------------------------------------------
     def add_waypoint(self, coordinates, altitude, velocity, **kwargs):
         waypoint = Waypoint(
@@ -99,10 +124,21 @@ class Mission():
                 )
         
         for wpt in self.waypoints:
+            if wpt.wp_type == "fly":
+                offset = max(
+                    self.args.flightaltitude, self.args.minimum_flightaltitude
+                    )
+            elif wpt.wp_type == "photo":
+                offset = self.args.photoaltitude
+            elif wpt.wp_type == "takeoff":
+                offset = 0.0
+            else:
+                raise ValueError(f"Unknown waypoint type: {wpt.wp_type}.")
+            
             altitude = waypoint_altitude(
                 dsm_path = self.args.dsm_path,
                 wpt = wpt,
-                altitude_agl = self.args.flightaltitude
+                altitude_agl = offset
             )
             wpt.set_altitude(altitude)
     
@@ -136,12 +172,40 @@ class Mission():
                 )
             for pt in poi_gdf.geometry
             ]
+        
+        # Add photo waypoints
+        new_waypoints = []
+        for wpt in self.waypoints:
+            photogroup = Photogroup(wpt)
+            waypoints = photogroup.create_waypoint_group()
+            new_waypoints.extend(waypoints)
+        self.waypoints = new_waypoints
+
         # Set waypoint altitudes based on DSM
         self.waypoint_altitudes_from_dsm()
     
     # IO----------------------------------------------------------------
     def export_mission(self):
         self.add_heading_angles()
+        
+        # Adjust waypoint altitudes for relative altitude mode
+        print("Adjusting waypoint altitudes relative to takeoff altitude...")
+        for wpt in self.waypoints:
+            if not wpt.altitude_adjusted:
+                relative_altitude = wpt.altitude - self.takeoff_altitude
+                print(f"{relative_altitude=}")
+                wpt.set_altitude(relative_altitude)
+                wpt.altitude_adjusted = True
+        
+        # Ensure waypoint index
+        for i, wpt in enumerate(self.waypoints):
+            wpt._index = i
+        
+        # Set action start index
+        start_index = 1
+        for wpt in self.waypoints:
+            wpt.action_start_index = start_index
+            start_index += wpt.num_actions
         
         # Create parent directory if not existent
         os.makedirs(os.path.dirname(self.args.destfile), exist_ok = True)
