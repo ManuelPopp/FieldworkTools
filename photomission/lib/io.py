@@ -33,6 +33,12 @@ def write_wayline_wpml(
             template_file = waypoint_template,
             index = index
             )
+        # Trying to reproduce DJI app pecularities with zoom action groups
+        if hasattr(wpt, "pass_backwards"):
+            pos = placemarks[-1].rfind("</wpml:actionGroup>")
+            pos += len("</wpml:actionGroup>")
+            placemarks[-1] = placemarks[-1][:pos] + "\n" + \
+                wpt.pass_backwards + "\n" + placemarks[-1][pos:]
         
         placemarks.append(out_xml)
     

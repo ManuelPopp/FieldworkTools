@@ -6,7 +6,8 @@ import os
 import numpy as np
 
 missions = {
-    "Photoroute01": "0FEC1DFE-95C9-44ED-8CD5-63283C1875CB"
+    "Photoroute01": "0FEC1DFE-95C9-44ED-8CD5-63283C1875CB",
+    "Photoroute02": "21A77741-4788-4531-BA91-37EE7A595FF0"
 }
 
 # Dataclasses-----------------------------------------------------------
@@ -33,4 +34,4 @@ class Defaults(Config):
     template_directory: str = os.path.join(".", "templates")
     safetybuffer: float = 10.0
     dsm_follow_segment_length: float = 20.0
-    transitionspeed: float = 8.0
+    transitionspeed: float = 2.5

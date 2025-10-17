@@ -2,16 +2,16 @@ from warnings import warn
 from lib.geo import get_utm_crs, round_coords, coordinates_to_utm
 from lib.actions import Action
 from lib.actiongroups import (
-    ActionGroup, compile_action_group
+    ActionGroup, PreparePhotoZoom, compile_action_group
 )
 from lib.utils import get_heading_angle
 
 class Waypoint():
     def __init__(
             self, coordinates, altitude, velocity,
-            turn_mode = "toPointAndStopWithContinuityCurvature",
+            turn_mode = "toPointAndPassWithContinuityCurvature",
             heading_mode = "smoothTransition",
-            heading_angle = None, heading_angle_enable = True,
+            heading_angle = None, heading_angle_enable = False,
             turn_damping_dist = None, use_straight = True,
             wp_type = "fly", utm_crs = None, actions = None,
             mission = None
@@ -104,7 +104,15 @@ class Waypoint():
                 action_group = action_group,
                 mode = "parallel"
             )
-            action_xmls.append(action_xml_i)
+            # Some really annoying and weird stuff:
+            # Zoom action groups must be inserted to the previous waypoint
+            # to work correctly in the DJI app. However, they still
+            # keep their action indices in the overall mission sequence.
+            if isinstance(action_group, PreparePhotoZoom):
+                self.pass_backwards = action_xml_i
+            else:
+                action_xmls.append(action_xml_i)
+            action_start_index += len(action_group.actions)
         
         return "\n".join(action_xmls)
     

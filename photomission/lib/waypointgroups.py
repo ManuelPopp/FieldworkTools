@@ -1,7 +1,7 @@
 #==============================================================================
 # Imports
 import copy
-from lib.actiongroups import PhotoActionGroup
+from lib.actiongroups import PreparePhotoActionGroup, PhotoActionGroup, PreparePhotoZoom
 from lib.waypoints import Waypoint
 
 #==============================================================================
@@ -66,15 +66,16 @@ class Photogroup(WaypointGroup):
         self.n = num_photos
     
     def create_waypoint_group(self):
-        #self.waypoint.pitch = -90.0                        # look straight down
         wpt_group = [self.waypoint]
         for _ in range(self.n):
             wpt_i = copy.deepcopy(self.waypoint)
             wpt_i.wp_type = "photo"
             wpt_i.add_action_group(PhotoActionGroup)
             wpt_i.pitch = -90.0
+            #wpt_i.add_action_group(PreparePhotoZoom)
             wpt_group.append(wpt_i)
         
+        self.waypoint.add_action_group(PreparePhotoActionGroup)
         wpt_group.append(copy.deepcopy(self.waypoint))
         self.n_waypoints = len(wpt_group)
         

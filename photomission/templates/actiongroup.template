@@ -1,10 +1,10 @@
         <wpml:actionGroup>
-          <wpml:actionGroupId>1</wpml:actionGroupId>
+          <wpml:actionGroupId>{ACTION_GROUP_ID}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>{START_INDEX}</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>{END_INDEX}</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
           <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+            <wpml:actionTriggerType>{ACTIONTRIGGER}</wpml:actionTriggerType>
           </wpml:actionTrigger>
 {ACTIONS}
         </wpml:actionGroup>

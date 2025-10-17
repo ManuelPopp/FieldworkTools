@@ -86,6 +86,8 @@ if __name__ == "__main__":
     
     ## Add waypoints and actions
     mission.make_waypoints()
-
+    mission.waypoints[0].turn_mode = "toPointAndStopWithContinuityCurvature"
+    mission.waypoints[-1].turn_mode = "toPointAndStopWithContinuityCurvature"
+    
     ## Export mission to KMZ
     mission.export_mission()

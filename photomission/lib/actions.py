@@ -108,7 +108,7 @@ class Hover(Action):
     def new(cls, action_group, time):
         return cls(
             action_group = action_group,
-            hoverTime = float(time),
+            hoverTime = int(time),
         )
 
 class OrientedShoot(Action):
@@ -178,8 +178,8 @@ class Pitch(Action):
         self.default = self.params = {
             "gimbalHeadingYawBase" : str("aircraft"),
             "gimbalRotateMode" : "absoluteAngle",
-            "gimbalPitchRotateEnable" : int(1),
-            "gimbalPitchRotateAngle" : 0.0,
+            "gimbalPitchRotateEnable" : int(0),
+            "gimbalPitchRotateAngle" : int(0),
             "gimbalRollRotateEnable" : int(0),
             "gimbalRollRotateAngle" : int(0),
             "gimbalYawRotateEnable" : int(0),
@@ -196,7 +196,8 @@ class Pitch(Action):
         return cls(
             action_group = action_group,
             gimbalPitchRotateEnable = int(1),
-            gimbalPitchRotateAngle = angle
+            gimbalPitchRotateAngle = int(angle),
+            gimbalRollRotateEnable = int(1)
         )
 
 class RecordPointCloud(Action):
@@ -322,10 +323,10 @@ class Zoom(Action):
         super().__init__(action_group)
         self.name = "zoom"
         self.default = self.params = {
-            "focalLength" : 0,
-            "isUseFocalFactor" : 1,
+            "focalLength" : int(0),
+            "isUseFocalFactor" : int(1),
             "focalFactor" : 0,
-            "payloadPositionIndex": 0
+            "payloadPositionIndex": int(0)
             } if "focalFactor" in kwargs.keys() else {
                 "focalLength" : 0,
                 "isUseFocalFactor" : 0,
@@ -341,7 +342,7 @@ class Zoom(Action):
             action_group = action_group,
             focalLength = mm
             )
-    
+    @classmethod
     def new_factor(cls, action_group, factor):
         return cls(
             action_group = action_group,

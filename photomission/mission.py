@@ -42,7 +42,7 @@ class Mission():
             f"{self.mission_slot}.kmz"
             )
         self.args.altitudetype = "relative"
-        self.args.wpturnmode = "toPointAndStopWithContinuityCurvature"
+        self.args.wpturnmode = "toPointAndPassWithContinuityCurvature"
         self.template_kml_directory = config.template_kml_directory
         self._takeoff_altitude = None
     
@@ -180,7 +180,10 @@ class Mission():
             waypoints = photogroup.create_waypoint_group()
             new_waypoints.extend(waypoints)
         self.waypoints = new_waypoints
-
+        # Set stable waypoint indices
+        for i, wpt in enumerate(self.waypoints):
+            wpt._index = i
+        
         # Set waypoint altitudes based on DSM
         self.waypoint_altitudes_from_dsm()
     
