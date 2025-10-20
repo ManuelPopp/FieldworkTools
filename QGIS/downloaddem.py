@@ -2,18 +2,117 @@ from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProcessing, QgsProcessingAlgorithm, QgsProcessingParameterFeatureSource,
     QgsProcessingParameterEnum, QgsProcessingParameterFileDestination,
-    QgsProcessingParameterNumber, QgsApplication, QgsAuthMethodConfig
+    QgsProcessingParameterNumber, QgsApplication, QgsAuthMethodConfig,
+    QgsRasterLayer, QgsCoordinateReferenceSystem
     )
+from qgis import processing
 import os
+import time
+import math
+import tempfile
 import requests
+import zipfile
+
+def get_aster_dem(west, south, east, north, output_file, user, password):
+    appeears_api = "https://appeears.earthdatacloud.nasa.gov/api/"
+    response = requests.post(
+        "https://appeears.earthdatacloud.nasa.gov/api/login",
+        auth = (user, password)
+    )
+    token_info = response.json()
+    del user, password
+    headers = {
+        "Authorization": "Bearer {0}".format(token_info["token"]),
+        "Content-Type": "application/json"
+        }
+
+    task_payload = {
+    "params": {
+        "geo": {
+        "type": "FeatureCollection",
+        "features": [{
+            "type": "Feature",
+            "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                [west, south],
+                [west, north],
+                [east, north],
+                [east, south],
+                [west, south]
+                ]
+            ]
+            },
+            "properties": {}
+        }]
+        },
+        "dates": [{
+        "endDate": "09-30-2018",
+        "startDate": "05-01-2017",
+        "recurring": False,
+        "yearRange": [2000, 2050]
+        }],
+        "layers": [{
+        "layer": "ASTER_GDEM_DEM",
+        "product": "ASTGTM_NC.003"
+        }],
+        "output": {
+        "format": {
+            "type": "geotiff"
+        },
+        "projection": "native"
+        }
+    },
+    "task_name": "Area Example",
+    "task_type": "area"
+    }
+
+    response = requests.post(appeears_api + "task", headers=headers, json=task_payload)
+    task_id = response.json()["task_id"]
+
+    while True:
+        status_response = requests.get(f"{appeears_api}task/{task_id}", headers=headers)
+        status = status_response.json()['status']
+        print("Task status:", status)
+        if status in ["done", "failed"]:
+            break
+        time.sleep(30)
+
+    if status == "done":
+        url = f"https://appeears.earthdatacloud.nasa.gov/api/bundle/{task_id}"
+        out_name = "C:/Users/poppman/Desktop/tmp/RamerenM3M/test.tif"
+        r = requests.get(
+            url, headers = {"Authorization": f"Bearer {token_info['token']}"}
+            )
+        files = r.json()["files"]
+
+        for f in files:
+            filename = f["file_name"]
+            
+            if "ASTGTM_NC.003" in filename:
+                file_id = f["file_id"]
+                file_url = f"https://appeears.earthdatacloud.nasa.gov/api/bundle/{task_id}/{file_id}"
+
+                response = requests.get(
+                    file_url,
+                    headers = {
+                        "Authorization": "Bearer {0}".format(token_info["token"])
+                        },
+                    allow_redirects = True,
+                    stream = True
+                )
+                with open(output_file, "wb") as fd:
+                    for chunk in response.iter_content(chunk_size = 8192):
+                        fd.write(chunk)
+                print(f"Downloaded {out_name}")
 
 class GetDEMFromOpenTopography(QgsProcessingAlgorithm):
-
     def initAlgorithm(self, config = None):
         self.dem_options = [
             "SRTMGL3", "SRTMGL1", "SRTMGL1_E", "AW3D30", "AW3D30_E", "SRTM15Plus",
             "NASADEM", "COP30", "COP90", "EU_DTM", "GEDI_L3", "GEBCOIceTopo",
-            "GEBCOSubIceTopo", "CA_MRDEM_DSM", "CA_MRDEM_DTM"
+            "GEBCOSubIceTopo", "CA_MRDEM_DSM", "CA_MRDEM_DTM", "ASTGTM_V003"
         ]
 
         self.addParameter(
@@ -28,7 +127,7 @@ class GetDEMFromOpenTopography(QgsProcessingAlgorithm):
                 "DEM_TYPE",
                 "DEM type",
                 options = self.dem_options,
-                defaultValue = self.dem_options.index("AW3D30_E")
+                defaultValue = self.dem_options.index("ASTGTM_V003")
             )
         )
         self.addParameter(
@@ -48,9 +147,23 @@ class GetDEMFromOpenTopography(QgsProcessingAlgorithm):
         )
 
     def processAlgorithm(self, parameters, context, feedback):
+        polygon = self.parameterAsSource(parameters, "POLYGON", context)
+        dem_type = self.dem_options[
+            self.parameterAsEnum(parameters, "DEM_TYPE", context)
+            ]
+        buffer_deg = self.parameterAsDouble(parameters, "BUFFER", context)
+        output_file = self.parameterAsFileOutput(parameters, "OUTPUT", context)
+        
+        extent = polygon.sourceExtent()
+        west = extent.xMinimum() - buffer_deg
+        east = extent.xMaximum() + buffer_deg
+        south = extent.yMinimum() - buffer_deg
+        north = extent.yMaximum() + buffer_deg
+        
         auth_manager = QgsApplication.authManager()
         available_configs = auth_manager.availableAuthMethodConfigs()
-        auth_id = "opentopography"
+        auth_id = "nasa" if dem_type == "ASTGTM_V003" else "opentopography"
+        
         for cfg_id, cfg in available_configs.items():
             if cfg.name() == auth_id:
                 auth_id = cfg_id
@@ -75,25 +188,22 @@ class GetDEMFromOpenTopography(QgsProcessingAlgorithm):
             # Some QGIS versions just return None
             success = True
         
-        apikey = mconfig.config("key") 
+        # ASTER GDEM download
+        if dem_type == "ASTGTM_V003":
+            user = mconfig.config("username")
+            password = mconfig.config("password")
+            get_aster_dem(west, south, east, north, output_file, user, password)
+            feedback.pushInfo("Download complete.")
+            return {"OUTPUT": output_file}
         
-        polygon = self.parameterAsSource(parameters, "POLYGON", context)
-        dem_type = self.dem_options[self.parameterAsEnum(parameters, "DEM_TYPE", context)]
-        buffer_deg = self.parameterAsDouble(parameters, "BUFFER", context)
-        output_file = self.parameterAsFileOutput(parameters, "OUTPUT", context)
-
-        extent = polygon.sourceExtent()
-        west  = extent.xMinimum() - buffer_deg
-        east  = extent.xMaximum() + buffer_deg
-        south = extent.yMinimum() - buffer_deg
-        north = extent.yMaximum() + buffer_deg
-
+        apikey = mconfig.config("key")
+        
         url = (
             f"https://portal.opentopography.org/API/globaldem?"
             f"demtype={dem_type}&south={south}&north={north}"
             f"&west={west}&east={east}&outputFormat=GTiff&API_Key={apikey}"
         )
-
+        
         feedback.pushInfo(f"Requesting DEM: {url}")
         response = requests.get(url, headers = {"accept": "*/*"})
         response.raise_for_status()

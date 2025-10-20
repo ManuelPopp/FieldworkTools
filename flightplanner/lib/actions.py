@@ -339,7 +339,7 @@ class Zoom(Action):
             action_group = action_group,
             focalLength = mm
             )
-    
+    @classmethod
     def new_factor(cls, action_group, factor):
         return cls(
             action_group = action_group,

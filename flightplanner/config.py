@@ -62,7 +62,7 @@ class M3MConfig(Config):
             -0.00896313366070803, 0.8963133773348276
             ]
         )
-    flightspeed: float = 3.0
+    flightspeed: float = 4.0
     template_directory: str = os.path.join(".", "templates", "m3m")
 
 @dataclass
