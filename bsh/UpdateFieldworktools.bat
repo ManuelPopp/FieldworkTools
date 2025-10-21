@@ -109,7 +109,7 @@ set "GITROOT_PY=%GITROOT:\=/%"
 :: Define the PowerShell replacement command
 set "REPLACEMENT0=script_dir = \"%GITROOT_PY%/FieldworkTools/flightplanner\""
 set "REPLACEMENT1=script_dir = \"%GITROOT_PY%/FieldworkTools/photoplanner\""
-set "REPLACEMENT2=default_geoid = \"%GITROOT_PY%/FieldworkTools/QGIS/data/geoid_model/EGM2008-1.tif\""
+set "REPLACEMENT2=default_geoid = \"%GITROOT_PY%/FieldworkTools/data/egm96/us_nga_egm96_15.tif\""
 
 echo Updating script_dir path inside all scripts...
 
