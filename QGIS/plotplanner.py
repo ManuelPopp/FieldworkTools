@@ -37,10 +37,10 @@ sensor_options_short = ["m3m", "l2"]
 
 altitude_options = [
     "AGL: Real time terrain follow",
-    "AGL: DSM follow",
+    "AGL: DTM follow",
     "Constant"
     ]
-altitude_options_short = ["rtf", "dsm", "constant"]
+altitude_options_short = ["rtf", "dtm", "constant"]
 
 grid_options = ["Lines", "Simple grid", "Double grid"]
 grid_options_short = ["lines", "simple", "double"]
@@ -133,7 +133,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.NSAMPLE = "NSAMPLE"
         self.GSD = "GSD"
         self.ALTITUDE = "ALTITUDE"
-        self.DSM = "DSM"
+        self.DTM = "DTM"
         self.TOSECUREALT = "TOSECUREALT"
         self.WIDTH = "WIDTH"
         self.HEIGHT = "HEIGHT"
@@ -178,13 +178,13 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         alt_param.setFlags(
             alt_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
             )
-        dsm_param = QgsProcessingParameterRasterLayer(
-            self.DSM,
-            "Raster file for DSM follow altitude",
+        dtm_param = QgsProcessingParameterRasterLayer(
+            self.DTM,
+            "Raster file for DTM follow altitude",
             optional = True
         )
-        dsm_param.setFlags(
-            dsm_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
+        dtm_param.setFlags(
+            dtm_param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
             )
         toalt_param = QgsProcessingParameterNumber(
             self.TOSECUREALT,
@@ -315,7 +315,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         self.addParameter(nsample_param)
         self.addParameter(gsd_param)
         self.addParameter(alt_param)
-        self.addParameter(dsm_param)
+        self.addParameter(dtm_param)
         self.addParameter(toalt_param)
         self.addParameter(width_param)
         self.addParameter(height_param)
@@ -348,7 +348,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         nsample = self.parameterAsInt(parameters, self.NSAMPLE, context)
         gsd = self.parameterAsDouble(parameters, self.GSD, context)
         alt = self.parameterAsDouble(parameters, self.ALTITUDE, context)
-        dsm_layer = self.parameterAsRasterLayer(parameters, self.DSM, context)
+        dtm_layer = self.parameterAsRasterLayer(parameters, self.DTM, context)
         toalt = self.parameterAsDouble(parameters, self.TOSECUREALT, context)
         width = parameters[self.WIDTH] if self.WIDTH in parameters else None
         height = parameters[self.HEIGHT] if self.HEIGHT in parameters else None
@@ -433,9 +433,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             cmd.extend(["-gsd", str(gsd)])
         if parameters[self.ALTITUDE] is not None:
             cmd.extend(["-alt", str(alt)])
-        if dsm_layer is not None and dsm_layer.isValid():
-            dsm_path = dsm_layer.source()
-            cmd.extend(["-dsm", dsm_path])
+        if dtm_layer is not None and dtm_layer.isValid():
+            dtm_path = dtm_layer.source()
+            cmd.extend(["-dtm", dtm_path])
         if parameters[self.TOSECUREALT] is not None:
             cmd.extend(["-tsa", str(toalt)])
         if width is not None:

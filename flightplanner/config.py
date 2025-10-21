@@ -42,7 +42,7 @@ class Defaults(Config):
     template_directory: str = os.path.join(".", "templates")
     gridmode: str = "lines"
     safetybuffer: float = 10.0
-    dsm_follow_segment_length: float = 20.0
+    dtm_follow_segment_length: float = 20.0
 
 @dataclass
 class M3MConfig(Config):
@@ -108,7 +108,7 @@ keydict = {
     "altitude_mode": {
         "rtf": "realTimeFollowSurface",
         "constant": "relativeToStartPoint",
-        "dsm": "WGS84"
+        "dtm": "WGS84"
     }
 }
 

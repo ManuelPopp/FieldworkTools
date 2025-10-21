@@ -22,8 +22,8 @@ if False:
         "--gridmode", "double",
         "--calibrateimu",
         "--altitudetype", "rtf",
-        "--dsm_path", "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/org/fieldwork/2025_06_WSL/dem/swissalti3d_Rameren_lonlat.tif",
-        "--dsm_follow_segment_length", "10"
+        "--dtm_path", "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/org/fieldwork/2025_06_WSL/dem/swissalti3d_Rameren_lonlat.tif",
+        "--dtm_follow_segment_length", "10"
         ]
     import os
     os.chdir("D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/flightplanner")
@@ -86,22 +86,22 @@ parser.add_argument(
 parser.add_argument(
     "--altitudetype", "-altt", type = str, default = defaults.altitudetype,
     help = "Flight altitude type. Either 'rtf' (realtime follow), " +
-        "'constant' (constant altitude), or a DSM (above DSM)." +
+        "'constant' (constant altitude), or a DTM (above DTM)." +
         f"Defaults to {defaults.altitudetype}."
     )
 parser.add_argument(
-    "--dsm_path", "-dsm", type = str,
-    help = "Path to the DSM file (required when altitude type is 'dsm')."
+    "--dtm_path", "-dtm", type = str,
+    help = "Path to the DTM file (required when altitude type is 'dtm')."
     )
 parser.add_argument(
-    "--dsm_follow_segment_length", "-dsmseg", type = float,
-    default = defaults.dsm_follow_segment_length,
-    help = "Maximum segment length for DSM follow in m. " +
-        f"Defaults to {defaults.dsm_follow_segment_length}."
+    "--dtm_follow_segment_length", "-dtmseg", type = float,
+    default = defaults.dtm_follow_segment_length,
+    help = "Maximum segment length for DTM follow in m. " +
+        f"Defaults to {defaults.dtm_follow_segment_length}."
     )
 parser.add_argument(
     "--safetybuffer", "-sb", type = float, default = defaults.safetybuffer,
-    help = "Horizontal safety buffer for DSM follow in m. " +\
+    help = "Horizontal safety buffer for DTM follow in m. " +\
         f"Defaults to {defaults.safetybuffer}."
     )
 parser.add_argument(
@@ -250,8 +250,8 @@ if __name__ == "__main__":
     mission.add_actions()
     if mission.args.calibrateimu:
         mission.add_imu_calibration_groups()
-    if mission.args.altitudetype == "dsm":
-        mission.waypoint_altitudes_from_dsm()
+    if mission.args.altitudetype == "dtm":
+        mission.waypoint_altitudes_from_dtm()
     mission.plot()
 
     ## Export mission to KMZ

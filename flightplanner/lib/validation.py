@@ -70,8 +70,8 @@ def validate_args(args):
     if args.transitionspeed == int(args.transitionspeed):
         args.transitionspeed = int(args.transitionspeed)
     
-    if args.altitudetype == "dsm" and not args.dsm_path:
-        parser.error("--dsm_path is required when altitude type is 'dsm'")
+    if args.altitudetype == "dtm" and not args.dtm_path:
+        parser.error("--dtm_path is required when altitude type is 'dtm'")
     
     ## Print input settings
     print("== Settings ==")

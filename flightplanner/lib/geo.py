@@ -200,7 +200,7 @@ def segment_duration(wp0, wp1):
     return duration
 
 def segment_altitude(
-        dsm_path,
+        dtm_path,
         wpt0,
         wpt1,
         altitude_agl,
@@ -223,35 +223,35 @@ def segment_altitude(
         )
     buffered_segment = buffered_segment_utm_buffered.to_crs("EPSG:4326")
     shapes = [mapping(geom) for geom in buffered_segment.geometry]
-    # Mask DSM to the buffered object
-    with rasterio.open(dsm_path) as dsm_file:
-        crs_src = dsm_file.crs
+    # Mask DTM to the buffered object
+    with rasterio.open(dtm_path) as dtm_file:
+        crs_src = dtm_file.crs
         crs_dst = "EPSG:4326"
         
         if crs_src != crs_dst:
             raise NotImplementedError(
                 "Input raster CRS is not EPSG:4326. CRS transformation is not implemented."
             )
-        dsm_file_masked, _ = mask.mask(
-            dsm_file, shapes,
+        dtm_file_masked, _ = mask.mask(
+            dtm_file, shapes,
             crop = True,
             indexes = 1,
             all_touched = True
             )
-        dsm_file_masked = dsm_file_masked.astype(float)
-        if isinstance(dsm_file.nodatavals, (tuple, list)):
-            for nd in dsm_file.nodatavals:
+        dtm_file_masked = dtm_file_masked.astype(float)
+        if isinstance(dtm_file.nodatavals, (tuple, list)):
+            for nd in dtm_file.nodatavals:
                 if nd is not None and np.isfinite(nd):
-                    dsm_file_masked[np.isclose(dsm_file_masked, nd)] = np.nan
+                    dtm_file_masked[np.isclose(dtm_file_masked, nd)] = np.nan
         else:
-            dsm_file_masked[
-                np.isclose(dsm_file_masked, dsm_file.nodatavals)
+            dtm_file_masked[
+                np.isclose(dtm_file_masked, dtm_file.nodatavals)
                 ] = np.nan
     
-    segment_max_elevation = np.nanmax(dsm_file_masked)
+    segment_max_elevation = np.nanmax(dtm_file_masked)
     if np.isnan(segment_max_elevation):
         raise ValueError(
-            "No DSM data found along the flight segment between " +
+            "No DTM data found along the flight segment between " +
             f"{wpt0.coordinates} and {wpt1.coordinates}. " +
             "Cannot determine flight altitude."
             )
@@ -273,57 +273,57 @@ def segment_altitude(
         polygon_4326 = gpd.GeoSeries(
             [polygon], crs = utm_zone
             ).to_crs("EPSG:4326")[0]
-        with rasterio.open(dsm_path) as dsm_file:
-            dsm_file_masked, _ = mask.mask(
-                dsm_file, [mapping(polygon_4326)],
+        with rasterio.open(dtm_path) as dtm_file:
+            dtm_file_masked, _ = mask.mask(
+                dtm_file, [mapping(polygon_4326)],
                 crop = True,
                 indexes = 1,
                 all_touched = True
                 )
-            dsm_file_masked = dsm_file_masked.astype(float)
-            if isinstance(dsm_file.nodatavals, (tuple, list)):
-                for nd in dsm_file.nodatavals:
+            dtm_file_masked = dtm_file_masked.astype(float)
+            if isinstance(dtm_file.nodatavals, (tuple, list)):
+                for nd in dtm_file.nodatavals:
                     if nd is not None and np.isfinite(nd):
-                        dsm_file_masked[np.isclose(dsm_file_masked, nd)] = np.nan
+                        dtm_file_masked[np.isclose(dtm_file_masked, nd)] = np.nan
             else:
-                dsm_file_masked[
-                    np.isclose(dsm_file_masked, dsm_file.nodatavals)
+                dtm_file_masked[
+                    np.isclose(dtm_file_masked, dtm_file.nodatavals)
                     ] = np.nan
-            circle_max_elevation = np.nanmax(dsm_file_masked)
+            circle_max_elevation = np.nanmax(dtm_file_masked)
         
         segment_max_elevation = np.nanmax([
             segment_max_elevation, circle_max_elevation
             ])
     if np.isnan(segment_max_elevation):
         raise ValueError(
-            "No DSM data found along the flight segment between " +
+            "No DTM data found along the flight segment between " +
             f"{wpt0.coordinates} and {wpt1.coordinates}, " +
             "nor in the IMU calibration area around " +
             f"{wpt0.coordinates}. Cannot determine flight altitude."
             )
     if segment_max_elevation <= 0.0:
         warn(
-            "Maximum DSM elevation along the flight segment and " +
+            "Maximum DTM elevation along the flight segment and " +
             "in the IMU calibration area is <= zero. This seems " +
-            "unlikely. Please check your DSM data."
+            "unlikely. Please check your DTM data."
             )
     
     waypoint_altitude = segment_max_elevation + altitude_agl
     
     return waypoint_altitude
 
-def waypoint_altitude(dsm_path, wpt, altitude_agl = 0.0):
+def waypoint_altitude(dtm_path, wpt, altitude_agl = 0.0):
     """
-    Get the altitude of a waypoint based on DSM data.
+    Get the altitude of a waypoint based on DTM data.
 
     Parameters
     ----------
-    dsm_path : str
-        The file path to the DSM (Digital Surface Model) raster.
+    dtm_path : str
+        The file path to the DTM (Digital Surface Model) raster.
     wpt : Waypoint
         The waypoint for which to retrieve the altitude.
     altitude_agl : float, optional
-        The altitude above ground level (AGL) to add to the DSM value.
+        The altitude above ground level (AGL) to add to the DTM value.
 
     Returns
     -------
@@ -332,25 +332,25 @@ def waypoint_altitude(dsm_path, wpt, altitude_agl = 0.0):
     """
     coordinates = wpt.coordinates
 
-    with rasterio.open(dsm_path) as src:
+    with rasterio.open(dtm_path) as src:
         if not src.crs.is_geographic:
             raise NotImplementedError(
                 "Input raster CRS is not EPSG:4326. CRS transformation is not implemented."
             )
-        dsm_value = list(src.sample([coordinates]))[0][0]
+        dtm_value = list(src.sample([coordinates]))[0][0]
         
-        if dsm_value == src.nodata:
-            raise ValueError(f"No DSM data at location {coordinates}")
+        if dtm_value == src.nodata:
+            raise ValueError(f"No DTM data at location {coordinates}")
     
-    if np.isnan(dsm_value):
-        raise ValueError(f"DSM value is NaN at location {coordinates}")
+    if np.isnan(dtm_value):
+        raise ValueError(f"DTM value is NaN at location {coordinates}")
     
-    if dsm_value <= 0:
+    if dtm_value <= 0:
         warn(
-            f"DSM value is ({dsm_value} m) at location " +
-            f"{coordinates}. This seems unlikely. Check DSM data."
+            f"DTM value is ({dtm_value} m) at location " +
+            f"{coordinates}. This seems unlikely. Check DTM data."
             )
     
-    altitude = dsm_value + altitude_agl
+    altitude = dtm_value + altitude_agl
     
     return altitude

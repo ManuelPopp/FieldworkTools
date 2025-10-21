@@ -26,7 +26,7 @@ def write_template_kml(
         calibrateimu,
         template_kml_directory,
         destfile,
-        dsm_path = None
+        dtm_path = None
         ):
     lsolaph, lsolapw, colaph, colapw = get_overlaps(
         horizontalfov, secondary_hfov, altitude, spacing,
@@ -63,7 +63,7 @@ def write_template_kml(
             CHOVERLAP = colaph,
             CWOVERLAP = colapw,
             IMUCALIBARATION = int(calibrateimu),
-            DSM_PATH = dsm_path
+            DTM_PATH = dtm_path
             )
     
     with zipfile.ZipFile(destfile, "a") as zf:
@@ -118,9 +118,9 @@ def write_wayline_wpml(
         with zf.open("wpmz/waylines.wpml", "w") as f:
             f.write(waylines.encode("utf8"))
 
-def copy_dsm(src, dst, rel_path = "wpmz/res/dsm"):
+def copy_dtm(src, dst, rel_path = "wpmz/res/dtm"):
     if not os.path.exists(src):
-        raise FileNotFoundError(f"Source DSM file not found: {src}")
+        raise FileNotFoundError(f"Source DTM file not found: {src}")
     os.makedirs(os.path.dirname(dst), exist_ok = True)
     with zipfile.ZipFile(dst, "a") as zf:
         arcname = os.path.join(rel_path, os.path.basename(src))

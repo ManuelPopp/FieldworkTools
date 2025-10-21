@@ -31,7 +31,7 @@
         <wpml:surfaceFollowModeEnable>1</wpml:surfaceFollowModeEnable>
         <wpml:isRealtimeSurfaceFollow>0</wpml:isRealtimeSurfaceFollow>
         <wpml:surfaceRelativeHeight>{EXECALTITUDE}</wpml:surfaceRelativeHeight>
-        <wpml:dsmFile>{DSM_PATH}</wpml:dsmFile>
+        <wpml:dtmFile>{DTM_PATH}</wpml:dtmFile>
       </wpml:waylineCoordinateSysParam>
       <wpml:autoFlightSpeed>{AUTOFLIGHTSPEED}</wpml:autoFlightSpeed>
       <Placemark>

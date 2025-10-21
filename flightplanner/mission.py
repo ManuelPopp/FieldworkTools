@@ -21,7 +21,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 
 from lib.utils import get_heading_angle, photo_trigger_intervals
-from lib.io import write_template_kml, write_wayline_wpml, copy_dsm
+from lib.io import write_template_kml, write_wayline_wpml, copy_dtm
 from lib.validation import validate_args
 from lib.waypoints import Waypoint
 from lib.grid import simple_grid, double_grid, rotate_gdf
@@ -59,15 +59,15 @@ class Mission():
         ## Initiate waypoint list
         self.waypoints = []
 
-        # Relative DSM output directory
-        self.dsm_out = None
+        # Relative DTM output directory
+        self.dtm_out = None
     
     @property
     def template_kml_directory(self):
         dir_main = os.path.join("templates", self.args.sensor)
         if self.args.altitudetype.lower() == "rtf":
             return os.path.join(dir_main, "agl_rtf")
-        if self.args.altitudetype.lower() == "dsm":
+        if self.args.altitudetype.lower() == "dtm":
             return os.path.join(dir_main, "agl_dem")
         raise NotImplementedError(
             f"Altitude type '{self.args.altitudetype}' not implemented."
@@ -97,7 +97,7 @@ class Mission():
             return "realTimeFollowSurface"
         if self.args.altitudetype == "constant":
             return "relativeToStartPoint"
-        if self.args.altitudetype == "dsm":
+        if self.args.altitudetype == "dtm":
             return "WGS84"
     
     @property
@@ -340,7 +340,7 @@ class Mission():
         self.waypoints[-2].add_action_group(StopObliqueLiDARMapping)
         '''
     
-    def waypoint_altitudes_from_dsm(self):
+    def waypoint_altitudes_from_dtm(self):
         if self.args.altitudetype.lower() == "rtf":
             warn(
                 "Altitude mode is set to RTF. " +
@@ -351,9 +351,9 @@ class Mission():
         if self.args.altitudetype.lower() == "constant":
             warn("Altitude mode is set to constant.")
             return
-        
-        if not os.path.isfile(self.args.dsm_path):
-            raise ValueError("DSM file not found.")
+
+        if not os.path.isfile(self.args.dtm_path):
+            raise ValueError("DTM file not found.")
         
         if len(self.waypoints) < 2:
             raise ValueError(
@@ -363,7 +363,7 @@ class Mission():
         # First, get altitude for existing waypoints
         for wpt in self.waypoints:
             altitude = waypoint_altitude(
-                dsm_path = self.args.dsm_path,
+                dtm_path = self.args.dtm_path,
                 wpt = wpt,
                 altitude_agl = self.args.altitude
             )
@@ -371,12 +371,12 @@ class Mission():
         # Split with existing altitude information assuming straight
         # transect lines
         self.split_waylines(
-            by = "distance", dmax = self.args.dsm_follow_segment_length
+            by = "distance", dmax = self.args.dtm_follow_segment_length
             )
         # Get new altitudes based on smaller segments
         for wp0, wp1 in zip(self.waypoints[:-1], self.waypoints[1:]):
             altitude = segment_altitude(
-                dsm_path = self.args.dsm_path,
+                dtm_path = self.args.dtm_path,
                 wpt0 = wp0, wpt1 = wp1,
                 altitude_agl = self.args.altitude,
                 horizontal_safety_buffer_m = self.args.safetybuffer
@@ -385,7 +385,7 @@ class Mission():
         # Set altitude for last waypoint
         self.waypoints[-1].set_altitude(
             segment_altitude(
-                dsm_path = self.args.dsm_path,
+                dtm_path = self.args.dtm_path,
                 wpt0 = self.waypoints[-2],
                 wpt1 = self.waypoints[-1],
                 altitude_agl = self.args.altitude,
@@ -578,15 +578,15 @@ class Mission():
                 )
         self.add_heading_angles()
         
-        # Generate DSM path and copy DSM if altitude type is DSM
-        if self.args.altitudetype.lower() == "dsm":
-            self.dsm_out = "/".join([
-                "wpmz", "res", "dsm",
-                os.path.basename(self.args.dsm_path)
+        # Generate DTM path and copy DTM if altitude type is DTM
+        if self.args.altitudetype.lower() == "dtm":
+            self.dtm_out = "/".join([
+                "wpmz", "res", "dtm",
+                os.path.basename(self.args.dtm_path)
                 ])
-            copy_dsm(
-                src = self.args.dsm_path, dst = self.args.destfile,
-                rel_path = self.dsm_out
+            copy_dtm(
+                src = self.args.dtm_path, dst = self.args.destfile,
+                rel_path = self.dtm_out
                 )
         
         # Write template.kml file
@@ -611,7 +611,7 @@ class Mission():
             scanning_mode = self.args.scanning_mode,
             calibrateimu = self.args.calibrateimu,
             destfile = self.args.destfile,
-            dsm_path = self.dsm_out
+            dtm_path = self.dtm_out
             )
         
         # Write wayline.wpml file
