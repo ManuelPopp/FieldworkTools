@@ -68,11 +68,15 @@ def get_aster_dem(west, south, east, north, output_file, user, password):
     "task_type": "area"
     }
 
-    response = requests.post(appeears_api + "task", headers=headers, json=task_payload)
+    response = requests.post(
+        appeears_api + "task", headers = headers, json = task_payload
+        )
     task_id = response.json()["task_id"]
 
     while True:
-        status_response = requests.get(f"{appeears_api}task/{task_id}", headers=headers)
+        status_response = requests.get(
+            f"{appeears_api}task/{task_id}", headers = headers
+            )
         status = status_response.json()['status']
         print("Task status:", status)
         if status in ["done", "failed"]:
@@ -192,6 +196,11 @@ class GetDEMFromOpenTopography(QgsProcessingAlgorithm):
         if dem_type == "ASTGTM_V003":
             user = mconfig.config("username")
             password = mconfig.config("password")
+            if user is None or password is None:
+                raise Exception(
+                    "Username or password for NASA Earthdata not set in " +
+                    "Authentication config 'nasa'."
+                )
             get_aster_dem(west, south, east, north, output_file, user, password)
             feedback.pushInfo("Download complete.")
             return {"OUTPUT": output_file}
