@@ -109,6 +109,7 @@ set "GITROOT_PY=%GITROOT:\=/%"
 :: Define the PowerShell replacement command
 set "REPLACEMENT0=script_dir = \"%GITROOT_PY%/FieldworkTools/flightplanner\""
 set "REPLACEMENT1=script_dir = \"%GITROOT_PY%/FieldworkTools/photoplanner\""
+set "REPLACEMENT2=default_geoid = \"%GITROOT_PY%/FieldworkTools/QGIS/data/geoid_model/EGM2008-1.tif\""
 
 echo Updating script_dir path inside all scripts...
 
@@ -127,6 +128,16 @@ powershell -Command "(Get-Content -Raw '%DEST_PHOTOPLANNER%') -replace 'script_d
 
 IF %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to update photoplanner.py
+    pause
+    popd
+    exit /b 1
+)
+
+:: Update downloaddem.py
+powershell -Command "(Get-Content -Raw '%DEST_DLDDEM%') -replace 'default_geoid = \\\".*?\\\"', '%REPLACEMENT2%' | Set-Content -Encoding UTF8 '%DEST_DLDDEM%'"
+
+IF %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] Failed to update downloaddem.py
     pause
     popd
     exit /b 1

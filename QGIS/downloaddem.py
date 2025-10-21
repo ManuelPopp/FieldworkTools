@@ -3,7 +3,9 @@ from qgis.core import (
     QgsProcessing, QgsProcessingAlgorithm, QgsProcessingParameterFeatureSource,
     QgsProcessingParameterEnum, QgsProcessingParameterFileDestination,
     QgsProcessingParameterNumber, QgsApplication, QgsAuthMethodConfig,
-    QgsRasterLayer, QgsCoordinateReferenceSystem
+    QgsRasterLayer, QgsCoordinateReferenceSystem,
+    QgsProcessingParameterBoolean, QgsProcessingUtils,
+    QgsProcessingParameterRasterLayer, QgsPointXY
     )
 from qgis import processing
 import os
@@ -12,6 +14,8 @@ import math
 import tempfile
 import requests
 import zipfile
+
+default_geoid = "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/data/egm96/us_nga_egm96_15.tif"
 
 def get_aster_dem(west, south, east, north, output_file, user, password):
     appeears_api = "https://appeears.earthdatacloud.nasa.gov/api/"
@@ -149,7 +153,13 @@ class GetDEMFromOpenTopography(QgsProcessingAlgorithm):
                 fileFilter = "GeoTIFF (*.tif)"
             )
         )
-
+        self.addParameter(
+            QgsProcessingParameterBoolean(
+                "ADD_GEOID",
+                "Add Geoid (EGM96)",
+                defaultValue = True
+            )
+        )
     def processAlgorithm(self, parameters, context, feedback):
         polygon = self.parameterAsSource(parameters, "POLYGON", context)
         dem_type = self.dem_options[
@@ -157,6 +167,9 @@ class GetDEMFromOpenTopography(QgsProcessingAlgorithm):
             ]
         buffer_deg = self.parameterAsDouble(parameters, "BUFFER", context)
         output_file = self.parameterAsFileOutput(parameters, "OUTPUT", context)
+        add_geoid = self.parameterAsBool(
+            parameters, "ADD_GEOID", context
+            )
         
         extent = polygon.sourceExtent()
         west = extent.xMinimum() - buffer_deg
@@ -192,6 +205,10 @@ class GetDEMFromOpenTopography(QgsProcessingAlgorithm):
             # Some QGIS versions just return None
             success = True
         
+        final_output = output_file
+        if add_geoid:
+            output_file = QgsProcessingUtils.generateTempFilename("tmp.tif")
+        
         # ASTER GDEM download
         if dem_type == "ASTGTM_V003":
             user = mconfig.config("username")
@@ -202,47 +219,79 @@ class GetDEMFromOpenTopography(QgsProcessingAlgorithm):
                     "Authentication config 'nasa'."
                 )
             get_aster_dem(west, south, east, north, output_file, user, password)
-            feedback.pushInfo("Download complete.")
-            return {"OUTPUT": output_file}
-        
-        apikey = mconfig.config("key")
-        
-        url = (
-            f"https://portal.opentopography.org/API/globaldem?"
-            f"demtype={dem_type}&south={south}&north={north}"
-            f"&west={west}&east={east}&outputFormat=GTiff&API_Key={apikey}"
-        )
-        
-        feedback.pushInfo(f"Requesting DEM: {url}")
-        response = requests.get(url, headers = {"accept": "*/*"})
-        response.raise_for_status()
-        content_type = response.headers.get("Content-Type", "")
-        if "application/json" in content_type:
-            try:
-                data = response.json()
-            except ValueError:
-                feedback.pushInfo(f"Response is not valid JSON:\n{response.text}")
-                raise Exception("API returned invalid JSON")
-            download_url = data.get("result", {}).get("URL")
-            if not download_url:
-                feedback.pushInfo(f"API response:\n{data}")
-                raise Exception("No download URL found in JSON response")
-            
-            feedback.pushInfo(f"Downloading from URL: {download_url}")
-            r = requests.get(download_url, stream = True)
-            r.raise_for_status()
-            content_stream = r
         else:
-            # Response is the file itself
-            feedback.pushInfo("Response contains the DEM file directly")
-            content_stream = response
+            apikey = mconfig.config("key")
+            
+            url = (
+                f"https://portal.opentopography.org/API/globaldem?"
+                f"demtype={dem_type}&south={south}&north={north}"
+                f"&west={west}&east={east}&outputFormat=GTiff&API_Key={apikey}"
+            )
+            
+            feedback.pushInfo(f"Requesting DEM: {url}")
+            response = requests.get(url, headers = {"accept": "*/*"})
+            response.raise_for_status()
+            content_type = response.headers.get("Content-Type", "")
+            if "application/json" in content_type:
+                try:
+                    data = response.json()
+                except ValueError:
+                    feedback.pushInfo(
+                        f"Response is not valid JSON:\n{response.text}"
+                        )
+                    raise Exception("API returned invalid JSON")
+                download_url = data.get("result", {}).get("URL")
+                if not download_url:
+                    feedback.pushInfo(f"API response:\n{data}")
+                    raise Exception("No download URL found in JSON response")
+                
+                feedback.pushInfo(f"Downloading from URL: {download_url}")
+                r = requests.get(download_url, stream = True)
+                r.raise_for_status()
+                content_stream = r
+            else:
+                # Response is the file itself
+                feedback.pushInfo("Response contains the DEM file directly")
+                content_stream = response
+            # Write to file
+            with open(output_file, "wb") as f:
+                for chunk in content_stream.iter_content(chunk_size = 8192):
+                    f.write(chunk)
+        
+        if add_geoid:
+            feedback.pushInfo("Download complete. Adding geoid height.")
 
-        # Write the file
-        with open(output_file, "wb") as f:
-            for chunk in content_stream.iter_content(chunk_size = 8192):
-                f.write(chunk)
-        feedback.pushInfo("Download complete.")
-        return {"OUTPUT": output_file}
+            raster1 = QgsRasterLayer(output_file, "dem")
+            raster2 = QgsRasterLayer(default_geoid, "geoid")
+            
+            # Subtract geoid
+            centre_x = (
+                raster1.extent().xMinimum() + raster1.extent().xMaximum()
+                ) / 2
+            centre_y = (
+                raster1.extent().yMinimum() + raster1.extent().yMaximum()
+                ) / 2
+            geoid_value, valid = raster2.dataProvider().sample(
+                    QgsPointXY(centre_x, centre_y), 1
+                )
+
+            processing.run(
+                "gdal:rastercalculator",
+                {
+                "INPUT_A": output_file,
+                "BAND_A": 1,
+                "FORMULA": f"A + {geoid_value}",
+                "OUTPUT": final_output,
+                "RTYPE": 6
+                },
+                context = context,
+                feedback = feedback
+            )
+        
+        else:
+            feedback.pushInfo("Download complete.")
+        
+        return {"OUTPUT": final_output}
 
     def name(self):
         return "get_dem_from_opentopography"
