@@ -35,3 +35,5 @@ class Defaults(Config):
     safetybuffer: float = 10.0
     dsm_follow_segment_length: float = 20.0
     transitionspeed: float = 2.5
+    num_photos: int = 6
+    photo_radius: float = 2.0

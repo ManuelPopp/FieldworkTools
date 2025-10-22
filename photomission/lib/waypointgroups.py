@@ -3,6 +3,7 @@
 import copy
 from lib.actiongroups import PreparePhotoActionGroup, PhotoActionGroup, PreparePhotoZoom
 from lib.waypoints import Waypoint
+from lib.insert import generate_circle
 
 #==============================================================================
 # Classes
@@ -59,24 +60,27 @@ class WaypointGroup():
 ## Specific waypoint group classes
 ### Calibrate IMU
 class Photogroup(WaypointGroup):
-    def __init__(self, waypoint, num_photos = 1):
+    def __init__(self, waypoint, num_photos = 1, radius = 2.0):
         self.wp_type = "photo"
         self.waypoint_group_type = "photogroup"
         self.waypoint = waypoint
         self.n = num_photos
+        self.radius = radius
     
     def create_waypoint_group(self):
         wpt_group = [self.waypoint]
-        for _ in range(self.n):
-            wpt_i = copy.deepcopy(self.waypoint)
+        circular_waypoints = generate_circle(
+            self.waypoint, self.n, self.radius
+            )
+        for wpt_i in circular_waypoints:
             wpt_i.wp_type = "photo"
             wpt_i.add_action_group(PhotoActionGroup)
             wpt_i.pitch = -90.0
             #wpt_i.add_action_group(PreparePhotoZoom)
             wpt_group.append(wpt_i)
         
-        self.waypoint.add_action_group(PreparePhotoActionGroup)
         wpt_group.append(copy.deepcopy(self.waypoint))
+        self.waypoint.add_action_group(PreparePhotoActionGroup)
         self.n_waypoints = len(wpt_group)
         
         return wpt_group

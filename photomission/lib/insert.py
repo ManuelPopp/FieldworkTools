@@ -47,3 +47,49 @@ def interpolate_waypoints(wp0, wp1, num_wpts):
         intermediate_waypoints.append(wpx)
     
     return intermediate_waypoints
+
+def generate_circle(wp, num_wpts, radius = 2):
+    """
+    Generate a circle of intermediate waypoints around a central waypoint.
+
+    Parameters
+    ----------
+    wp : Waypoint
+        The central waypoint.
+    num_wpts : int
+        The number of intermediate waypoints to generate.
+    radius : float
+        The radius of the circle in meters.
+    
+    Returns
+    -------
+    list of Waypoint
+        A list of circular waypoints.
+    """
+    if num_wpts < 1:
+        return []
+    
+    if num_wpts == 1:
+        return [wp]
+    
+    # Generate circular waypoints
+    utm_crs = wp.utm_crs
+    if utm_crs is None:
+        raise ValueError("UTM CRS must be set for the waypoint.")
+    coords_wp = wp.coordinates_utm
+    angles = np.linspace(0, 2 * np.pi, num_wpts, endpoint = False)
+
+    circular_waypoints = []
+    for angle in angles:
+        x = coords_wp[0] + radius * np.cos(angle)
+        y = coords_wp[1] + radius * np.sin(angle)
+        lon, lat = coordinates_to_lonlat(x, y, utm_crs)
+        wpx = Waypoint(
+            coordinates = (lon, lat),
+            altitude = wp.altitude,
+            velocity = wp.velocity,
+            utm_crs = utm_crs
+        )
+        circular_waypoints.append(wpx)
+
+    return circular_waypoints

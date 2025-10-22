@@ -45,7 +45,9 @@ class Mission():
         self.args.wpturnmode = "toPointAndPassWithContinuityCurvature"
         self.template_kml_directory = config.template_kml_directory
         self._takeoff_altitude = None
-    
+        self.num_photos = self.args.num_photos
+        self.photo_radius = self.args.photo_radius
+
     @property
     def distance(self):
         if self.waypoints == []:
@@ -176,7 +178,9 @@ class Mission():
         # Add photo waypoints
         new_waypoints = []
         for wpt in self.waypoints:
-            photogroup = Photogroup(wpt)
+            photogroup = Photogroup(
+                wpt, num_photos = self.num_photos, radius = self.photo_radius
+                )
             waypoints = photogroup.create_waypoint_group()
             new_waypoints.extend(waypoints)
         self.waypoints = new_waypoints

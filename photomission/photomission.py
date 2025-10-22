@@ -76,7 +76,18 @@ parser.add_argument(
     help = "UAV transition speed in m/s. " +
         f"Defaults to {defaults.transitionspeed}."
     )
-
+parser.add_argument(
+    "--num_photos", "-nph", type = int,
+    default = defaults.num_photos,
+    help = "Number of photos to take at each waypoint. " +
+        f"Defaults to {defaults.num_photos}."
+    )
+parser.add_argument(
+    "--photo_radius", "-pr", type = float,
+    default = defaults.photo_radius,
+    help = "Radius for photo capture around each waypoint in meters. " +
+        f"Defaults to {defaults.photo_radius}."
+    )
 args = parser.parse_args()
 
 # Body------------------------------------------------------------------
