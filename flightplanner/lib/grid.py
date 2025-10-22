@@ -513,10 +513,6 @@ def double_grid(
         top, bottom, left, right, x_centre, y_centre, spacing, buffer,
         plotangle, local_crs
         ):
-    warn(
-        "Before simple grid:\n" +
-        f"{top=}, {bottom=}, {left=}, {right=}, {x_centre=}, {y_centre=}, {spacing=}, {buffer=}, {plotangle=}"
-        )
     base_grid_coordinates = simple_grid(
         top, bottom, left, right, x_centre, y_centre, spacing, buffer,
         plotangle, gridmode = "simple", local_crs = local_crs
@@ -524,10 +520,6 @@ def double_grid(
     last_point = (
         base_grid_coordinates.iloc[-1,].x,
         base_grid_coordinates.iloc[-1,].y
-        )
-    warn(
-        "Before free_angle_flight_path:\n" +
-        f"{top=}, {bottom=}, {left=}, {right=}, {x_centre=}, {y_centre=}, {spacing=}, {buffer=}, {plotangle=}"
         )
     rotation_45_grid_coordinates, _, _ = free_angle_flight_path(
         centre_northing = y_centre, centre_easting = x_centre,
