@@ -510,7 +510,7 @@ def simple_grid(
 
 def double_grid(
         top, bottom, left, right, x_centre, y_centre, spacing, buffer,
-        plotangle, local_crs
+        plotangle, local_crs, nicegrid = True
         ):
     base_grid_coordinates = simple_grid(
         top, bottom, left, right, x_centre, y_centre, spacing, buffer,
@@ -520,13 +520,26 @@ def double_grid(
         base_grid_coordinates.iloc[-1,].x,
         base_grid_coordinates.iloc[-1,].y
         )
+    
+    if nicegrid:
+        warn(
+            "Using 'nicegrid' spacing adjustment for double grid. This may" +
+            " lead to unexpected spacing values and increase buffer size."
+            )
+        dg_spacing = spacing / np.sqrt(2)
+        dg_buffer = buffer + (spacing * np.sqrt(2)) / 2 - (spacing / 2)
+    else:
+        dg_spacing = spacing
+        dg_buffer = buffer
+
     rotation_45_grid_coordinates, _, _ = free_angle_flight_path(
         centre_northing = y_centre, centre_easting = x_centre,
         local_crs = local_crs,
         top = top, bottom = bottom, left = left, right = right,
         rectangle_rotation_angle = plotangle,
         flight_angle = plotangle + 45,
-        line_spacing = spacing, buffer_m = buffer,
+        line_spacing = dg_spacing,
+        buffer_m = dg_buffer,
         start_point = last_point
         )
     last_point = (
@@ -540,7 +553,8 @@ def double_grid(
         top = top, bottom = bottom, left = left, right = right,
         rectangle_rotation_angle = plotangle,
         flight_angle = plotangle + 135,
-        line_spacing = spacing, buffer_m = buffer,
+        line_spacing = dg_spacing,
+        buffer_m = dg_buffer,
         start_point = last_point
         )
     
