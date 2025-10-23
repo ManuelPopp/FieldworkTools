@@ -166,19 +166,18 @@ class Mission():
                 ),
             crs = self.local_crs
             )
-
-        # Rotate plot if required
-        if self.args.plotangle != 90:
-            plot_gdf_utm = rotate_gdf(
-                gdf = plot_gdf_utm,
-                x_centre = x_centre, y_centre = y_centre,
-                angle = self.args.plotangle - 90
-                )
-            plot_gdf_utm_buff = rotate_gdf(
-                gdf = plot_gdf_utm_buff,
-                x_centre = x_centre, y_centre = y_centre,
-                angle = self.args.plotangle - 90
+        
+        # Rotate plot
+        plot_gdf_utm = rotate_gdf(
+            gdf = plot_gdf_utm,
+            x_centre = x_centre, y_centre = y_centre,
+            angle = self.args.plotangle
             )
+        plot_gdf_utm_buff = rotate_gdf(
+            gdf = plot_gdf_utm_buff,
+            x_centre = x_centre, y_centre = y_centre,
+            angle = self.args.plotangle
+        )
         
         # Set mission attributes
         self.x_centre = x_centre

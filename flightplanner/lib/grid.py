@@ -494,14 +494,13 @@ def simple_grid(
             [wayline_gdf_utm, wayline_gdf_utm_vertical],
             ignore_index = True
             )
-
-    # Rotate flight paths if required
-    if plotangle != 90:
-        wayline_gdf_utm = rotate_gdf(
-            gdf = wayline_gdf_utm,
-            x_centre = x_centre, y_centre = y_centre,
-            angle = plotangle - 90
-        )
+    
+    # Rotate waylines around centre point by plotangle
+    wayline_gdf_utm = rotate_gdf(
+        gdf = wayline_gdf_utm,
+        x_centre = x_centre, y_centre = y_centre,
+        angle = plotangle
+    )
 
     # Convert wayline coordinates to EPSG:4326 and generate placemarks
     wayline_gdf = wayline_gdf_utm.to_crs("EPSG:4326")
