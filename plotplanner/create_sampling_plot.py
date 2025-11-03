@@ -377,7 +377,10 @@ if __name__ == "__main__":
         width = args.width,
         height = args.height,
         N = args.numpoints,
-        plotangle = args.plotangle
+        plotangle = args.plotangle,
+        label = os.path.basename(
+            os.path.splitext(args.destfile)[0]
+         ) + "{i}{j}"
     )
     points = points[["label", "geometry"]]
     

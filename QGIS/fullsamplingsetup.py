@@ -24,7 +24,7 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
         param.setFlags(param.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
         self.addParameter(param)
         self.addParameter(QgsProcessingParameterPoint("centre_coordinate2", "Centre Coordinate", defaultValue = None))
-        self.addParameter(QgsProcessingParameterRasterLayer("dsm", "DSM", defaultValue = None))
+        self.addParameter(QgsProcessingParameterRasterLayer("dtm", "DTM", defaultValue = None))
         param = QgsProcessingParameterNumber("height", "Height", optional = True, type = QgsProcessingParameterNumber.Double, minValue = 1, maxValue = 6000, defaultValue = 100)
         param.setFlags(param.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
         self.addParameter(param)
@@ -61,11 +61,11 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
         # Matrice 400 Flightplan
         alg_params = {
             "ALTITUDE": 85,
-            "ALTTYPE": 1,  # AGL: DSM follow
+            "ALTTYPE": 0,  # AGL: RTF=0, DTM follow=1
             "ANGLE": None,
             "BUFFER": None,
             "CALIBIMU": True,
-            "DSM": parameters["dsm"],
+            "DTM": parameters["dtm"],
             "FILENAME": outputs["StringConcatenation"]["CONCATENATION"],
             "FLAP": None,
             "FLIGHTSPEED": None,
@@ -100,11 +100,11 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
         # Spacing at 85 m AGL DEM follow and 85 % side overlap is 15.5 m
         alg_params = {
             "ALTITUDE": 85,
-            "ALTTYPE": 1,  # AGL: DSM follow
+            "ALTTYPE": 0,  # AGL: RTF=0, DTM follow=1
             "ANGLE": None,
             "BUFFER": None,
             "CALIBIMU": False,
-            "DSM": parameters["dsm"],
+            "DTM": parameters["dtm"],
             "FILENAME": parameters["plot_name"],
             "FLAP": None,
             "FLIGHTSPEED": None,
