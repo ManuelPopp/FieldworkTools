@@ -75,6 +75,9 @@ class Mission():
     
     @property
     def takeoff_altitude(self):
+        if self.args.dsm_path == "fixed_altitude":
+            return 0.0
+        
         if self._takeoff_altitude is None:
             if self.args.takeoff_latitude is None \
                 or self.args.takeoff_longitude is None:
