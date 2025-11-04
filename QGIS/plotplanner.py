@@ -384,8 +384,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             else:
                 feedback.pushInfo(f"User-set plot angle {angle_deg}°.")
             
-            # Overwrite centre point
-            point_wgs84 = mid
+            # Overwrite centre point ===================================
+            # Uncomment to change behaviour to midpoint of both inputs
+            #point_wgs84 = mid
         
         lat = point_wgs84.y()
         lon = point_wgs84.x()
