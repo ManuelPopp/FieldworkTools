@@ -89,7 +89,7 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
 
         # Matrice 400 Flightplan
         alg_params = {
-            "ALTITUDE": 85,
+            "ALTITUDE": 30 if parameters["dtm"] is None else 85,
             "ALTTYPE": 0 if parameters["dtm"] is None else 1,  # AGL: RTF=0, DTM follow=1
             "ANGLE": None,
             "BUFFER": None,
@@ -130,7 +130,7 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
         # Mavic 3M Flightplan
         # Spacing at 85 m AGL DEM follow and 85 % side overlap is 15.5 m
         alg_params = {
-            "ALTITUDE": 85,
+            "ALTITUDE": 50 if parameters["dtm"] is None else 85,
             "ALTTYPE": 0 if parameters["dtm"] is None else 1,  # AGL: RTF=0, DTM follow=1
             "ANGLE": None,
             "BUFFER": None,
