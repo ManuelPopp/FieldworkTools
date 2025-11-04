@@ -20,18 +20,47 @@ from pathlib import Path
 
 class CreateSamplingPlot(QgsProcessingAlgorithm):
     def initAlgorithm(self, config = None):
-        param = QgsProcessingParameterPoint("angle_coordinate", "Angle Coordinate", optional = True, defaultValue = None)
+        param = QgsProcessingParameterPoint(
+            "angle_coordinate", "Angle Coordinate",
+            optional = True, defaultValue = None
+            )
         param.setFlags(param.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
         self.addParameter(param)
-        self.addParameter(QgsProcessingParameterPoint("centre_coordinate2", "Centre Coordinate", defaultValue = None))
-        self.addParameter(QgsProcessingParameterRasterLayer("dtm", "DTM", defaultValue = None))
-        param = QgsProcessingParameterNumber("height", "Height", optional = True, type = QgsProcessingParameterNumber.Double, minValue = 1, maxValue = 6000, defaultValue = 100)
-        param.setFlags(param.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
+        self.addParameter(
+            QgsProcessingParameterPoint(
+                "centre_coordinate2", "Centre Coordinate", defaultValue = None
+                )
+            )
+        self.addParameter(
+            QgsProcessingParameterRasterLayer(
+                "dtm", "DTM", optional = True, defaultValue = None
+                )
+            )
+        param = QgsProcessingParameterNumber(
+            "height", "Height",
+            optional = True, type = QgsProcessingParameterNumber.Double,
+            minValue = 1, maxValue = 6000, defaultValue = 100
+            )
+        param.setFlags(
+            param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
+            )
         self.addParameter(param)
-        self.addParameter(QgsProcessingParameterFolderDestination("OUTPUT", "Output folder"))
-        self.addParameter(QgsProcessingParameterString("plot_name", "Plot Name", multiLine = False, defaultValue = None))
-        param = QgsProcessingParameterNumber("width", "Width", optional = True, type = QgsProcessingParameterNumber.Double, minValue = 1, maxValue = 6000, defaultValue = 100)
-        param.setFlags(param.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
+        self.addParameter(
+            QgsProcessingParameterFolderDestination("OUTPUT", "Output folder")
+            )
+        self.addParameter(
+            QgsProcessingParameterString(
+                "plot_name", "Plot Name", multiLine = False, defaultValue = None
+                )
+            )
+        param = QgsProcessingParameterNumber(
+            "width", "Width", optional = True,
+            type = QgsProcessingParameterNumber.Double,
+            minValue = 1, maxValue = 6000, defaultValue = 100
+            )
+        param.setFlags(
+            param.flags() | QgsProcessingParameterDefinition.FlagAdvanced
+            )
         self.addParameter(param)
 
     def processAlgorithm(self, parameters, context, model_feedback):
@@ -61,11 +90,13 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
         # Matrice 400 Flightplan
         alg_params = {
             "ALTITUDE": 85,
-            "ALTTYPE": 0,  # AGL: RTF=0, DTM follow=1
+            "ALTTYPE": 0 if parameters["dtm"] is None else 1,  # AGL: RTF=0, DTM follow=1
             "ANGLE": None,
             "BUFFER": None,
             "CALIBIMU": True,
-            "DTM": parameters["dtm"].source() if hasattr(parameters["dtm"], "source") else parameters["dtm"],
+            "DTM": parameters["dtm"].source() if hasattr(
+                parameters["dtm"], "source"
+                ) else parameters["dtm"],
             "FILENAME": outputs["StringConcatenation"]["CONCATENATION"],
             "FLAP": None,
             "FLIGHTSPEED": None,
@@ -100,11 +131,13 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
         # Spacing at 85 m AGL DEM follow and 85 % side overlap is 15.5 m
         alg_params = {
             "ALTITUDE": 85,
-            "ALTTYPE": 0,  # AGL: RTF=0, DTM follow=1
+            "ALTTYPE": 0 if parameters["dtm"] is None else 1,  # AGL: RTF=0, DTM follow=1
             "ANGLE": None,
             "BUFFER": None,
             "CALIBIMU": False,
-            "DTM": parameters["dtm"].source() if hasattr(parameters["dtm"], "source") else parameters["dtm"],
+            "DTM": parameters["dtm"].source() if hasattr(
+                parameters["dtm"], "source"
+                ) else parameters["dtm"],
             "FILENAME": parameters["plot_name"],
             "FLAP": None,
             "FLIGHTSPEED": None,
