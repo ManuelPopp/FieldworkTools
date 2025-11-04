@@ -117,7 +117,8 @@ class Mission():
     
     def waypoint_altitudes_from_dsm(self):
         if not os.path.isfile(self.args.dsm_path):
-            raise ValueError("DSM file not found.")
+            if self.args.dsm_path != "fixed_altitude":
+                raise ValueError("DSM file not found.")
         
         if len(self.waypoints) < 2:
             raise ValueError(
