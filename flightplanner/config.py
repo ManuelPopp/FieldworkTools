@@ -47,7 +47,7 @@ class Defaults(Config):
 @dataclass
 class M3MConfig(Config):
     sensorfactor: float = 21.6888427734375
-    sideoverlap: float = 0.80
+    sideoverlap: float = 0.85
     frontoverlap: float = 0.9
     overlapsensor: str = "MS"
     horizontalfov: float = 61.2
