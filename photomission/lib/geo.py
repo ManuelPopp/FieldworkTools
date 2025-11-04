@@ -330,6 +330,9 @@ def waypoint_altitude(dsm_path, wpt, altitude_agl = 0.0):
     float
         The calculated altitude for the waypoint.
     """
+    if dsm_path == "fixed_altitude":
+        return altitude_agl
+    
     coordinates = wpt.coordinates
     try:
         lon, lat = coordinates
