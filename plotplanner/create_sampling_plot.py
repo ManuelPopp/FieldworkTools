@@ -389,7 +389,7 @@ if __name__ == "__main__":
     ## Write output
     if output_format == "gpkg":
         print("Writing to GPKG...")
-        plot_gdf.to_file(dst, layer = "polygons", driver = "GPKG")
+        #plot_gdf.to_file(dst, layer = "polygons", driver = "GPKG")
         points.to_file(dst, layer = "points", driver = "GPKG")
     elif output_format in ["kml", "kmz"]:
         print("Writing to KML...")

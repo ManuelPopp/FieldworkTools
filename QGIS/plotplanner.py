@@ -479,7 +479,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         # Create sampling plot plan
         feedback.pushInfo(f"Creating sampling plot\n")
-        plot_output_path = os.path.splitext(full_output_path)[0] + ".kml"
+        plot_output_path = os.path.splitext(full_output_path)[0] + ".gpkg"
         cmd2 = [
             "python", script_name2,
             "-lat", str(lat),
