@@ -17,6 +17,7 @@ files_to_check = {
         "result_Green.tif", "result_NIR.tif",
         "result_RedEdge.tif", "result_Red.tif",
         "{PLOT}.las"
+    ]
 }
 
 folders = [
@@ -47,14 +48,12 @@ red = PatternFill(
     start_color = "FFC7CE", end_color = "FFC7CE", fill_type = "solid"
     )
 
-_ = [
-    ws.cell(row = r, column = c).fill = green if ws.cell(
-        row = r, column = c
-        ).value is True else red if ws.cell(
-            row = r, column = c
-            ).value is False else ws.cell(row = r, column = c).fill
-            for r in range(2, ws.max_row + 1)
-            for c in range(2, ws.max_column + 1)
-            ]
+for r in range(2, ws.max_row + 1):
+    for c in range(2, ws.max_column + 1):
+        cell = ws.cell(row=r, column=c)
+        if cell.value is True:
+            cell.fill = green
+        elif cell.value is False:
+            cell.fill = red
 
 wb.save(excel_path)
