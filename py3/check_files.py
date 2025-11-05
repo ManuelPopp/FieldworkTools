@@ -12,11 +12,11 @@ files_to_check = {
         ],
     "Licor": ["{PLOT}_Processed_coords.xlsx"],
     "DJITerra": [
-        "dsm.tif", "GNDVI.tif", "LCI.tif", "NDRE.tif", "NDVI.tif", "OSAVI.tif",
+        "GNDVI.tif", "LCI.tif", "NDRE.tif", "NDVI.tif", "OSAVI.tif",
         "result.tif",
         "result_Green.tif", "result_NIR.tif",
         "result_RedEdge.tif", "result_Red.tif",
-        "{PLOT}.las"
+        "{PLOT}.las", "dem.tif", "dom.tif", "dsm.tif"
     ]
 }
 
