@@ -110,6 +110,8 @@ set "GITROOT_PY=%GITROOT:\=/%"
 set "REPLACEMENT0=script_dir = \"%GITROOT_PY%/FieldworkTools/flightplanner\""
 set "REPLACEMENT1=script_dir = \"%GITROOT_PY%/FieldworkTools/photoplanner\""
 set "REPLACEMENT2=default_geoid = \"%GITROOT_PY%/FieldworkTools/data/egm96/us_nga_egm96_15.tif\""
+set "REPLACEMENT3=script_dir = \"%GITROOT_PY%/FieldworkTools/R\""
+set "REPLACEMENT4=script_dir = \"%GITROOT_PY%/FieldworkTools/R\""
 
 echo Updating script_dir path inside all scripts...
 
@@ -144,7 +146,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 :: Update mergelas.py
-powershell -Command "(Get-Content -Raw '%DEST_MERGELAS%') -replace 'script_dir = \\\".*?\\\"', '%REPLACEMENT%' | Set-Content -Encoding UTF8 '%DEST_MERGELAS%'"
+powershell -Command "(Get-Content -Raw '%DEST_MERGELAS%') -replace 'script_dir = \\\".*?\\\"', '%REPLACEMENT3%' | Set-Content -Encoding UTF8 '%DEST_MERGELAS%'"
 
 IF %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to update mergelas.py
@@ -154,7 +156,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 :: Update croplas.py
-powershell -Command "(Get-Content -Raw '%DEST_CROPLAS%') -replace 'script_dir = \\\".*?\\\"', '%REPLACEMENT%' | Set-Content -Encoding UTF8 '%DEST_CROPLAS%'"
+powershell -Command "(Get-Content -Raw '%DEST_CROPLAS%') -replace 'script_dir = \\\".*?\\\"', '%REPLACEMENT4%' | Set-Content -Encoding UTF8 '%DEST_CROPLAS%'"
 
 IF %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to update croplas.py
