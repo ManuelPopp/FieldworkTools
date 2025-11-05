@@ -1,7 +1,7 @@
 import os
 import shutil
 
-dji_directory = "C:/Users/dme/Documents/DJITerra/dme@wsl.ch"
+dji_directory = "C:/Users/dme/Documents/DJI/DJITerra/dme@wsl.ch"
 sample_main = "F:/FIELDWORK"
 sample_directories = os.listdir(sample_main)
 
