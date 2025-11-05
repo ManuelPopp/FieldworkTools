@@ -368,7 +368,8 @@ if __name__ == "__main__":
             )
         out_ext = ".kml"
     
-    dst = os.path.splitext(args.destfile)[0] + out_ext
+    dst_name = os.path.splitext(args.destfile)[0]
+    dst = dst_name + out_ext
     
     ## Get measurement locations
     points = get_point_locations(
@@ -389,8 +390,14 @@ if __name__ == "__main__":
     ## Write output
     if output_format == "gpkg":
         print("Writing to GPKG...")
-        #plot_gdf.to_file(dst, layer = "polygons", driver = "GPKG")
-        points.to_file(dst, layer = "points", driver = "GPKG")
+        plot_gdf.to_file(
+            dst_name + "_boundary.gpkg",
+            layer = "polygons", driver = "GPKG"
+            )
+        points.to_file(
+            dst_name + "_points.gpkg",
+            layer = "points", driver = "GPKG"
+            )
     elif output_format in ["kml", "kmz"]:
         print("Writing to KML...")
         combined = pd.concat([plot_gdf, points], ignore_index = True)

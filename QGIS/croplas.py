@@ -110,7 +110,8 @@ class CropPointCloud(QgsProcessingAlgorithm):
         vector_layer = self.parameterAsVectorLayer(
             parameters, self.VECTOR, context
             )
-        vector_path = vector_layer.source() if vector_layer is not None else None
+        vector_path = vector_layer.source().split("|")[0] \
+            if vector_layer is not None else None
         las_path = self.parameterAsFile(parameters, self.POINTCLOUD, context)
         
         output_path = self.parameterAsFile(parameters, self.OUTPUT, context)

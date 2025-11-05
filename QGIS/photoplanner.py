@@ -82,7 +82,7 @@ class PhotoMissionAlgorithm(QgsProcessingAlgorithm):
             "python", script_path,
             "--slot", str(slot),
             "-dsm", dsm_layer.source(),
-            "--poi_path", poi_layer.source(),
+            "--poi_path", poi_layer.source().split("|")[0],
             "-out", output,
             "-tolat", str(coord.y()),
             "-tolon", str(coord.x()),
