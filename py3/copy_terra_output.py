@@ -27,10 +27,11 @@ for sample in sample_directories:
         tif_files = [f for f in os.listdir(src_dir) if f.endswith(".tif")]
 
         for f in tif_files:
-            shutil.copy(
-                os.path.join(src_dir, f),
-                os.path.join(dst_dir, f)
-                )
+            if os.path.exists(os.path.join(src_dir, f)):
+                shutil.copy(
+                    os.path.join(src_dir, f),
+                    os.path.join(dst_dir, f)
+                    )
 
 # Copy DJI Terra results for L2
 additional_files = {
