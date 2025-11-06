@@ -5,7 +5,7 @@ from openpyxl.styles import PatternFill
 
 base_dir = "F:/FIELDWORK/"
 files_to_check = {
-    ".": [
+    "": [
         "{PLOT}.gpx", "{PLOT}_points.gpkg", "{PLOT}_boundary.gpkg",
         "{PLOT}_L2.kmz", "{PLOT}_M3M.kmz",
         "{PLOT}_report_L2.kmz", "{PLOT}_report_M3M.kmz"
