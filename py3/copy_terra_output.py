@@ -27,7 +27,9 @@ for sample in sample_directories:
         tif_files = [f for f in os.listdir(src_dir) if f.endswith(".tif")]
 
         for f in tif_files:
-            if os.path.exists(os.path.join(src_dir, f)):
+            if os.path.exists(
+                os.path.join(src_dir, f)
+                ) and not os.path.exists(os.path.join(dst_dir, f)):
                 shutil.copy(
                     os.path.join(src_dir, f),
                     os.path.join(dst_dir, f)
@@ -35,6 +37,7 @@ for sample in sample_directories:
 
 # Copy DJI Terra results for L2
 additional_files = {
+    "lidars": "cloud_merged.las",
     "terra_dsm": "dsm.tif",
     "terra_dom": "dom.tif",
     "terra_dem": "dem.tif"
@@ -49,5 +52,5 @@ for sample in sample_directories:
             dst_path = os.path.join(
                 sample_main, sample, "DJITerra", filename
                 )
-            if os.path.exists(src_path):
+            if os.path.exists(src_path) and not os.path.exists(dst_path):
                 shutil.copy(src_path, dst_path)

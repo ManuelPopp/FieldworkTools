@@ -10,13 +10,17 @@ files_to_check = {
         "{PLOT}_L2.kmz", "{PLOT}_M3M.kmz",
         "{PLOT}_report_L2.kmz", "{PLOT}_report_M3M.kmz"
         ],
-    "Licor": ["{PLOT}_Processed_coords.xlsx"],
+    "Licor": [
+        "Above/{PLOT}-A.txt",
+        "Below/{PLOT}-B.txt",
+        "{PLOT}_Processed_coords.xlsx"
+        ],
     "DJITerra": [
         "GNDVI.tif", "LCI.tif", "NDRE.tif", "NDVI.tif", "OSAVI.tif",
         "result.tif",
         "result_Green.tif", "result_NIR.tif",
         "result_RedEdge.tif", "result_Red.tif",
-        "{PLOT}.las", "dem.tif", "dom.tif", "dsm.tif"
+        "cloud_merged.las", "dem.tif", "dom.tif", "dsm.tif"
     ]
 }
 
@@ -27,7 +31,7 @@ folders = [
 data = {
     folder: {
         f"{sub}/{fname.format(PLOT = sub)}": os.path.exists(
-            os.path.join(base_dir, folder, sub, fname.format(PLOT=folder))
+            os.path.join(base_dir, folder, sub, fname.format(PLOT = sub))
             )
         for sub, fnames in files_to_check.items()
         for fname in fnames
