@@ -30,12 +30,11 @@ folders = [
 
 data = {
     folder: {
-        f"{sub}/{fname.format(PLOT = folder)}" if sub else fname.format(
+        f"{sub}/{fname.format(PLOT = folder)}" if sub != "" else fname.format(
             PLOT = folder
-            ):
-            os.path.exists(
-                os.path.join(
-                    base_dir, folder, sub, fname.format(PLOT = folder)
+        ): os.path.exists(
+            os.path.join(
+                base_dir, folder, sub, fname.format(PLOT = folder)
                     )
                 ) for sub, fnames in files_to_check.items() for fname in fnames
     }
