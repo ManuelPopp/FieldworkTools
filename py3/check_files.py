@@ -30,14 +30,17 @@ folders = [
 
 data = {
     folder: {
-        f"{sub}/{fname.format(PLOT = folder)}": os.path.exists(
-            os.path.join(base_dir, folder, sub, fname.format(PLOT = folder))
-            )
-        for sub, fnames in files_to_check.items()
-        for fname in fnames
-        }
-        for folder in folders
-        }
+        f"{sub}/{fname.format(PLOT = folder)}" if sub else fname.format(
+            PLOT = folder
+            ):
+            os.path.exists(
+                os.path.join(
+                    base_dir, folder, sub, fname.format(PLOT = folder)
+                    )
+                ) for sub, fnames in files_to_check.items() for fname in fnames
+    }
+    for folder in folders
+}
 
 df = pd.DataFrame(data).T
 excel_path = os.path.join(base_dir, "file_check.xlsx")
