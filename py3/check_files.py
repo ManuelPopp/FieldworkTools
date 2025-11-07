@@ -19,7 +19,8 @@ files_to_check = {
         "GNDVI.tif", "LCI.tif", "NDRE.tif", "NDVI.tif", "OSAVI.tif",
         "result.tif", "result_Green.tif", "result_NIR.tif",
         "result_RedEdge.tif", "result_Red.tif",
-        "cloud_merged.las", "dem.tif", "dom.tif", "dsm.tif"
+        "cloud_merged.las", "dem.tif", "dom.tif", "dsm.tif",
+        "dsm_m3m.tif"
     ]
 }
 
@@ -39,6 +40,35 @@ data = {
 }
 
 df = pd.DataFrame(data).T
+
+df = df.rename(
+    columns = {
+        "{PLOT}.gpx": "GPX",
+        "{PLOT}_points.gpkg": "Points",
+        "{PLOT}_boundary.gpkg": "Boundary",
+        "{PLOT}_L2.kmz": "L2 Mission",
+        "{PLOT}_M3M.kmz": "M3M Mission",
+        "{PLOT}_report_L2.kmz": "L2 Report",
+        "{PLOT}_report_M3M.kmz": "M3M Report",
+        "Licor\\Above/{PLOT}-A.txt": "Licor Above",
+        "Licor\\Below/{PLOT}-B.txt": "Licor Below",
+        "Licor\\{PLOT}_Processed_coords.xlsx": "Licor Processed",
+        "DJITerra\\GNDVI.tif": "GNDVI",
+        "DJITerra\\LCI.tif": "LCI",
+        "DJITerra\\NDRE.tif": "NDRE",
+        "DJITerra\\NDVI.tif": "NDVI",
+        "DJITerra\\OSAVI.tif": "OSAVI",
+        "DJITerra\\result.tif": "Result",
+        "DJITerra\\result_Green.tif": "Green",
+        "DJITerra\\result_NIR.tif": "NIR",
+        "DJITerra\\result_RedEdge.tif": "RedEdge",
+        "DJITerra\\result_Red.tif": "Red",
+        "DJITerra\\cloud_merged.las": "Pointcloud",
+        "DJITerra\\dem.tif": "DEM",
+        "DJITerra\\dom.tif": "DOM",
+        "DJITerra\\dsm.tif": "DSM",
+        "DJITerra\\dsm_m3m.tif": "DSM M3M"
+    })
 excel_path = os.path.join(base_dir, "file_check.xlsx")
 df.to_excel(excel_path)
 

@@ -16,6 +16,8 @@ for sample in sample_directories:
         tif_files_dst = [
             f if not f == "dsm.tif" else "dsm_m3m.tif" for f in tif_files_src
             ]
+        print(f"M3M source files: {tif_files_src}")
+        print(f"Copy to: {tif_files_dst}")
         for f_src, f_dst in zip(tif_files_src, tif_files_dst):
             shutil.copy(
                 os.path.join(src_dir, f_src),
@@ -25,7 +27,7 @@ for sample in sample_directories:
         # Copy level -1 files
         src_dir = os.path.join(dji_directory, sample + "MS", "map", "index_map")
         tif_files = [f for f in os.listdir(src_dir) if f.endswith(".tif")]
-
+        print(f"M3M maps: {tif_files}")
         for f in tif_files:
             if os.path.exists(
                 os.path.join(src_dir, f)
