@@ -527,7 +527,7 @@ def double_grid(
             " lead to unexpected spacing values and increase buffer size."
             )
         dg_spacing = spacing / np.sqrt(2)
-        dg_buffer = buffer + (spacing * np.sqrt(2)) / 2 - (spacing / 2)
+        dg_buffer = buffer + (spacing * np.sqrt(2)) / 2 - (spacing * 0.75)
     else:
         dg_spacing = spacing
         dg_buffer = buffer
