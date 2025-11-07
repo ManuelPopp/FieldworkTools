@@ -32,9 +32,9 @@ data = {
     folder: {
         f"{sub}{fname.format(PLOT = folder)}":
         os.path.exists(
-            "/".join(
+            "/".join([
                 base_dir, folder, f"{sub}{fname.format(PLOT = folder)}"
-                    )
+                    ])
                 ) for sub, fnames in files_to_check.items() for fname in fnames
     }
     for folder in folders
