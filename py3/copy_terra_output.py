@@ -40,7 +40,7 @@ for sample in sample_directories:
 
 # Copy DJI Terra results for L2
 additional_files = {
-    "lidars": "cloud_merged.las",
+    "terra_las": "cloud_merged.las",
     "terra_dsm": "dsm.tif",
     "terra_dom": "dom.tif",
     "terra_dem": "dem.tif"
@@ -48,10 +48,10 @@ additional_files = {
 
 for sample in sample_directories:
     print(f"Processing L2 sample: {sample}")
-    if os.path.exists(os.path.join(dji_directory, sample + "LiDAR")):
+    if os.path.exists(os.path.join(dji_directory, sample + "LiDAR", "lidars")):
         for subfolder, filename in additional_files.items():
             src_path = os.path.join(
-                dji_directory, sample + "LiDAR", "map", subfolder, filename
+                dji_directory, sample + "LiDAR", "lidars", subfolder, filename
                 )
             dst_path = os.path.join(
                 sample_main, sample, "DJITerra", filename
