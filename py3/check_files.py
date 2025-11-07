@@ -5,17 +5,17 @@ from openpyxl.styles import PatternFill
 
 base_dir = "F:/FIELDWORK/"
 files_to_check = {
-    None: [
+    "": [
         "{PLOT}.gpx", "{PLOT}_points.gpkg", "{PLOT}_boundary.gpkg",
         "{PLOT}_L2.kmz", "{PLOT}_M3M.kmz",
         "{PLOT}_report_L2.kmz", "{PLOT}_report_M3M.kmz"
         ],
-    "Licor": [
+    "/Licor": [
         "Above/{PLOT}-A.txt",
         "Below/{PLOT}-B.txt",
         "{PLOT}_Processed_coords.xlsx"
         ],
-    "DJITerra": [
+    "/DJITerra": [
         "GNDVI.tif", "LCI.tif", "NDRE.tif", "NDVI.tif", "OSAVI.tif",
         "result.tif",
         "result_Green.tif", "result_NIR.tif",
@@ -30,11 +30,10 @@ folders = [
 
 data = {
     folder: {
-        f"{sub}/{fname.format(PLOT = folder)}" if sub else fname.format(
-            PLOT = folder
-        ): os.path.exists(
+        f"{sub}{fname.format(PLOT = folder)}":
+        os.path.exists(
             os.path.join(
-                base_dir, folder, sub, fname.format(PLOT = folder)
+                base_dir, folder, f"{sub}{fname.format(PLOT = folder)}"
                     )
                 ) for sub, fnames in files_to_check.items() for fname in fnames
     }
