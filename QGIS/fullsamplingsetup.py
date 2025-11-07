@@ -182,8 +182,12 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
         
         for report in out_dir.glob("*_report.txt"):
             if "_L2" not in report.stem:
-                report.rename(report.with_name(report.stem + "_M3M.txt"))
-        
+                report.rename(
+                    report.with_name(
+                        report.stem.replace("_report", "_M3M_report") + ".txt"
+                    )
+                )
+
         return results
 
     def name(self):
