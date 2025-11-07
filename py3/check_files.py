@@ -8,7 +8,7 @@ files_to_check = {
     "": [
         "{PLOT}.gpx", "{PLOT}_points.gpkg", "{PLOT}_boundary.gpkg",
         "{PLOT}_L2.kmz", "{PLOT}_M3M.kmz",
-        "{PLOT}_report_L2.txt", "{PLOT}_report_M3M.txt"
+        "{PLOT}_L2_report.txt", "{PLOT}_M3M_report.txt"
     ],
     "Licor": [
         "Above/{PLOT}-A.txt",
