@@ -11,8 +11,8 @@ files_to_check = {
         "{PLOT}_report_L2.kmz", "{PLOT}_report_M3M.kmz"
         ],
     "/Licor": [
-        "Above/{PLOT}-A.txt",
-        "Below/{PLOT}-B.txt",
+        "/Above/{PLOT}-A.txt",
+        "/Below/{PLOT}-B.txt",
         "{PLOT}_Processed_coords.xlsx"
         ],
     "/DJITerra": [
@@ -32,7 +32,7 @@ data = {
     folder: {
         f"{sub}{fname.format(PLOT = folder)}":
         os.path.exists(
-            os.path.join(
+            "/".join(
                 base_dir, folder, f"{sub}{fname.format(PLOT = folder)}"
                     )
                 ) for sub, fnames in files_to_check.items() for fname in fnames
