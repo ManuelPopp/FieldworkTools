@@ -7,6 +7,7 @@ sample_directories = os.listdir(sample_main)
 
 # Copy DJI Terra results for Mavic 3M
 for sample in sample_directories:
+    print(f"Processing M3M sample: {sample}")
     if os.path.exists(os.path.join(dji_directory, sample + "MS")):
         dst_dir = os.path.join(sample_main, sample, "DJITerra")
 
@@ -46,6 +47,7 @@ additional_files = {
 }
 
 for sample in sample_directories:
+    print(f"Processing L2 sample: {sample}")
     if os.path.exists(os.path.join(dji_directory, sample + "LiDAR")):
         for subfolder, filename in additional_files.items():
             src_path = os.path.join(
