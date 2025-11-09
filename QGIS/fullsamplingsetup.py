@@ -177,6 +177,10 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
         # Remove duplicate files from L2 output
         for f in out_dir.glob("*_L2.kml"):
             f.unlink()
+        for f in out_dir.glob("*_L2_boundary.gpkg"):
+            f.unlink()
+        for f in out_dir.glob("*_L2_points.gpkg"):
+            f.unlink()
         for f in out_dir.glob("*_L2.gpx"):
             f.unlink()
         
