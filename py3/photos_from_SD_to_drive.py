@@ -105,7 +105,7 @@ class H30Image(Image):
         self.__dict__.update(shortened)
 
 # Get plot boundaries
-fw_dir = os.path.join("F:", "FIELDWORK")
+fw_dir = os.path.join("D:", "FIELDWORK")
 plots = gpd.GeoDataFrame()
 for plot in os.listdir(fw_dir):
     bbox_file = os.path.join(fw_dir, plot, f"{plot}_boundary.gpkg")
@@ -123,6 +123,7 @@ for path, n, filenames in os.walk(sd_dir):
         for filename in filenames:
             file = os.path.join(path, filename)
             if os.path.splitext(file)[1].lower() == ".jpg":
+                print(f"File: {file}")
                 try:
                     img = H30Image(file)
                     location = (img.targetlon, img.targetlat)
@@ -140,3 +141,5 @@ for path, n, filenames in os.walk(sd_dir):
                     if not os.path.exists(os.path.join(fw_dir, plot, "TOCPhotos", filename)):
                         print(f"Copying {filename} from {plot}")
                         shutil.copyfile(file, os.path.join(fw_dir, plot, "TOCPhotos", filename))
+                    else:
+                        print("Exists in dst.")
