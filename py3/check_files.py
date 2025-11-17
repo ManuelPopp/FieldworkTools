@@ -3,7 +3,7 @@ import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 
-base_dir = "F:/FIELDWORK"
+base_dir = "D:/FIELDWORK"
 files_to_check = {
     "": [
         "{PLOT}.gpx", "{PLOT}_points.gpkg", "{PLOT}_boundary.gpkg",
