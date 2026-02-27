@@ -20,7 +20,7 @@ Work on the backup hard drive. The resulting files are later added on the networ
 4. Run a model to identify individual trees and conpute tree count per ha. There are various options and we need to discuss which approach to use. Add the results to PLOTID_plot_stats.csv.
 
 ## Contribute
-It would be nice, if people from the team contribute to reach milestones faster.
+It would be nice if people from the team contribute to reach milestones faster.
 If you contribute, please make sure to always stick perfectly to the style guides for the respective coding laguage:
 - Python: https://peps.python.org/pep-0008/
 - R: http://adv-r.had.co.nz/Style.html
