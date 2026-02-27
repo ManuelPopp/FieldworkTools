@@ -12,7 +12,7 @@ Scripts and tools for fieldwork.
 ## Processing workflow after field sampling
 Work on the backup hard drive. The resulting files are later added on the network drive.
 1. Open each RGB file and overlay the sampling plot border.
-    - If the plot area covers only forest, copy the border to a new file named <PLOTID>_final.gpkg.
+    - If the plot area covers only forest, copy the border to a new file named PLOTID_final.gpkg.
     - If the plot area covers different vegetation types, crop out the forest. If it contains roads or buildings, polygonise the built-up area, buffer it by 5 m and crop it from the sampling area. In case there is sufficient sampled forest area beyond the plot area, increase the size of the original rectangle, ideally to have a 1-ha plot after masking out artificial areas. Save the masked plot areas as PLOTID_final.gpkg.
     - If there are power lines, use CloudCompare to remove the power lines from the LiDAR pointcloud.
 2. Remove the terrain from each point cloud. Usually, the DJI Terra output is better than the DTM conputed in R or CloudCompare when using default settings. If the DJI Terra DTM is okay, just use it.
