@@ -6,6 +6,7 @@ from config import keydict
 from lib.utils import get_overlaps
 
 def write_template_kml(
+        drone_id,
         horizontalfov,
         secondary_hfov,
         spacing,
@@ -39,6 +40,7 @@ def write_template_kml(
         template_text = file.read()
         template = template_text.format(
             TIMESTAMP = int(time.time() * 1000),
+            DRONE_ENUM_VALUE = drone_id,
             X0 = np.round(plot_coordinates.x[0], 13),
             X1 = np.round(plot_coordinates.x[1], 13),
             X2 = np.round(plot_coordinates.x[2], 13),

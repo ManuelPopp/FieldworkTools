@@ -32,8 +32,8 @@ defaultname = "SamplingPlot"
 script_dir2 = os.path.join(os.path.dirname(script_dir), "plotplanner")
 script_name2 = "create_sampling_plot.py"
 
-sensor_options = ["Mavic M3M", "Zenmuse L2"]
-sensor_options_short = ["m3m", "l2"]
+setup_options = ["Mavic M3M", "Matrice 400 + Zenmuse L2", "Matrice 350 + Zenmuse L2"]
+setup_options_short = ["m3m", ["m400", "l2"], ["m350", "l2"]]
 
 altitude_options = [
     "AGL: Real time terrain follow",
@@ -62,7 +62,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
     LATLON2 = "LATLON2"
     OUTPUT = "OUTPUT"
     FILENAME = "FILENAME"
-    SENSOR = "SENSOR"
+    SETUP = "SETUP"
     ALTTYPE = "ALTTYPE"
     GRIDMODE = "GRIDMODE"
     CALIBIMU = "CALIBIMU"
@@ -99,10 +99,10 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterEnum(
-                self.SENSOR,
+                self.SETUP,
                 "Sensor model",
-                options = sensor_options,
-                defaultValue = sensor_options[0]
+                options = setup_options,
+                defaultValue = setup_options[0]
             )
         )
         self.addParameter(
@@ -330,7 +330,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
     
     def processAlgorithm(self, parameters, context, feedback):
         # Main parameters
-        sensor = self.parameterAsString(parameters, self.SENSOR, context)
+        setup = self.parameterAsString(parameters, self.SETUP, context)
         point = self.parameterAsPoint(
         parameters, self.LATLON, context
         )
@@ -397,9 +397,9 @@ class CreateFlightplan(QgsProcessingAlgorithm):
             parameters, self.FILENAME, context
             )
         
-        # Get sensor type
-        sensor_index = self.parameterAsEnum(parameters, "SENSOR", context)
-        sensor = sensor_options_short[sensor_index]
+        # Get setup type
+        setup_index = self.parameterAsEnum(parameters, "SETUP", context)
+        setup = setup_options_short[setup_index]
         
         # Get altitude type
         alttype_index = self.parameterAsEnum(parameters, "ALTTYPE", context)
@@ -419,9 +419,12 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         os.makedirs(os.path.dirname(full_output_path), exist_ok = True)
         
         # Generate command
+        ## Ensure setup is a list
+        if not isinstance(setup, list):
+            setup = [setup]
         cmd = [
-            "python", script_name,
-            sensor,
+            "python", script_name
+            ] + setup + [
             "-lat", str(lat),
             "-lon", str(lon),
             "-dst", full_output_path,

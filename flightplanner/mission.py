@@ -412,7 +412,7 @@ class Mission():
         new_waypoints = []
         for wp0, wp1 in zip(self.waypoints[:-1], self.waypoints[1:]):
             if cumulative_time >= self.args.imucalibrationinterval:
-                wp0.add_calibration()
+                wp0.add_calibration(hover = self.args.droneid == 89)
                 cumulative_time = 0
             
             new_waypoints.append(wp0)
@@ -590,6 +590,7 @@ class Mission():
         
         # Write template.kml file
         write_template_kml(
+            drone_id = self.args.droneid,
             horizontalfov = self.args.horizontalfov,
             secondary_hfov = self.args.secondary_hfov,
             spacing = self.args.spacing,

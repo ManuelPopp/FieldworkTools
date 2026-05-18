@@ -109,7 +109,7 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
             "NSAMPLE": None,
             "OUTPUT": parameters["OUTPUT"],
             "SCANMODE": False,
-            "SENSOR": 1,  # Zenmuse L2
+            "SETUP": 1,  # Zenmuse L2
             "SLAP": None,
             "SPACING": 20,
             "TOSECUREALT": None,
@@ -150,7 +150,7 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
             "NSAMPLE": None,
             "OUTPUT": parameters["OUTPUT"],
             "SCANMODE": False,
-            "SENSOR": 0,  # Mavic M3M
+            "SETUP": 0,  # Mavic M3M
             "SLAP": None,
             "SPACING": None,
             "TOSECUREALT": None,

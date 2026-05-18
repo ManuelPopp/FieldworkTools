@@ -11,7 +11,7 @@
       <wpml:takeOffSecurityHeight>{TOSECUREHEIGHT}</wpml:takeOffSecurityHeight>
       <wpml:globalTransitionalSpeed>{TRANSITIONSPEED}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
-        <wpml:droneEnumValue>103</wpml:droneEnumValue>
+        <wpml:droneEnumValue>{DRONE_ENUM_VALUE}</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
       <wpml:autoRerouteInfo>

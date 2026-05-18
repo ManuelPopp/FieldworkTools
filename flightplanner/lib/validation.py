@@ -4,6 +4,13 @@ import numpy as np
 from warnings import warn
 
 def validate_args(args):
+    # Check setup argument
+    if isinstance(args.setup, list) and len(args.setup) > 2:
+        raise ValueError(
+            "Setup may only consist of a platform and one sensor. " +
+            f"Got {len(args.setup)} arguments."
+            )
+    
     ## Ensure the output is a .kmz file
     if os.path.splitext(args.destfile)[1].lower() != ".kmz":
         args.destfile = args.destfile + ".kmz"
@@ -70,8 +77,16 @@ def validate_args(args):
     if args.transitionspeed == int(args.transitionspeed):
         args.transitionspeed = int(args.transitionspeed)
     
+    if args.platform == "m350" and args.altitudetype == "rtf":
+        raise ValueError(
+            "Altitude type 'rtf' is not supported with this UAV model" +
+            " due to the lack of a downward-facing range finder." +
+            " Please use 'dtm', a constant altitude, or switch to a" +
+            " supported UAV model."
+            )
+    
     if args.altitudetype == "dtm" and not args.dtm_path:
-        parser.error("--dtm_path is required when altitude type is 'dtm'")
+        raise ValueError("--dtm_path is required when altitude type is 'dtm'")
     
     ## Print input settings
     print("== Settings ==")

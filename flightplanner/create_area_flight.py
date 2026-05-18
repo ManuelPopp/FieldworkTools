@@ -49,7 +49,10 @@ from lib.utils import get_heading_angle
 defaults = Defaults()
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "sensor", choices = defaults.sensorchoices, action = ParameterSet,
+    "setup",
+    nargs = "+",
+    choices = defaults.setupchoices,
+    action = ParameterSet,
     default = defaults.sensor,
     help = "Sensor model."
     )

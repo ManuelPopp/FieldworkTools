@@ -125,15 +125,18 @@ class Waypoint():
             )
         self.actions.append(action_group(waypoint = self, **kwargs))
     
-    def add_calibration(self):
+    def add_calibration(self, hover = False):
         if self.has_actiongroup:
             for action in self.actions:
                 if hasattr(action, "add_calibration"):
-                    action.add_calibration()
+                    try:
+                        action.add_calibration(hover = hover)
+                    except TypeError:
+                        action.add_calibration()
                     self.perform_imu_calibration = True
                     break
         if not self.perform_imu_calibration:
-            self.actions.append(AircraftCalibrationGroup(self))
+            self.actions.append(AircraftCalibrationGroup(self, hover = hover))
             self.perform_imu_calibration = True
     
     def set_altitude(self, altitude):

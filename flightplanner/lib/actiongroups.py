@@ -105,14 +105,14 @@ class AircraftCalibrationGroup(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None, action_end_wp = None, hover = False
             ):
         super().__init__(waypoint, action_start_wp, action_end_wp)
         self.__class__.instances.append(self)
         self.action_trigger = "reachPoint"
         self.actions = [
-            AircraftCalibration(self)
-        ]
+            AircraftCalibration(self), Hover.new(self, 0.5)
+        ] if hover else [AircraftCalibration(self)]
 
 class PrepareTimelapseNadirMSMapping(ActionGroup):
     instances = []
