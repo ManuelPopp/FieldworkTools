@@ -26,7 +26,6 @@ from qgis.core import (
 
 import subprocess
 
-script_dir = "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/flightplanner"
 script_name = "create_area_flight.py"
 defaultname = "SamplingPlot"
 
@@ -100,7 +99,7 @@ def get_unique_filename(folder, base = defaultname, ext = ".kmz"):
 # Classes
 ## Tools------------------------------------------------------------------------
 ### Create flight plan
-class CreateFlightplan(QgsProcessingAlgorithm):
+class CreateLegacyFlightplan(QgsProcessingAlgorithm):
     LATLON = "LATLON"
     LATLON2 = "LATLON2"
     OUTPUT = "OUTPUT"
@@ -145,7 +144,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
                 self.SETUP,
                 "Sensor model",
                 options = setup_options,
-                defaultValue = setup_options[0]
+                defaultValue = 2
             )
         )
         self.addParameter(
@@ -153,7 +152,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
                 self.ALTTYPE,
                 "Altitude type",
                 options = altitude_options,
-                defaultValue = altitude_options[0]
+                defaultValue = 1
             )
         )
         
@@ -162,13 +161,13 @@ class CreateFlightplan(QgsProcessingAlgorithm):
                 self.GRIDMODE,
                 "Flight pattern type",
                 options = grid_options,
-                defaultValue = grid_options[0]
+                defaultValue = 2
             )
         )
         calibimu_param = QgsProcessingParameterBoolean(
             self.CALIBIMU,
             "Calibrate IMU",
-            defaultValue = False
+            defaultValue = True
         )
         self.addParameter(calibimu_param)
         
@@ -526,7 +525,7 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         
         # Create sampling plot plan
         feedback.pushInfo(f"Creating sampling plot\n")
-        plot_output_path = os.path.splitext(full_output_path)[0] + ".gpkg"
+        plot_output_path = os.path.splitext(full_output_path)[0] + ".kml"
         cmd2 = [
             "python", script_name2,
             "-lat", str(lat),
@@ -588,10 +587,10 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         return {}
 
     def name(self):
-        return "create_plotplan"
+        return "create_legacy_plotplan"
 
     def displayName(self):
-        return "Create Plot Plan"
+        return "Create Legacy Plot Plan"
 
     def group(self):
         return "Fieldwork Tools"
@@ -600,4 +599,4 @@ class CreateFlightplan(QgsProcessingAlgorithm):
         return "fieldworktools"
 
     def createInstance(self):
-        return CreateFlightplan()
+        return CreateLegacyFlightplan()

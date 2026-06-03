@@ -5,7 +5,6 @@ Name : Create Sampling Plot
 Group : Fieldwork Tools
 """
 
-from anyio import Path
 from qgis.core import QgsProcessing
 from qgis.core import QgsProcessingAlgorithm
 from qgis.core import QgsProcessingMultiStepFeedback
@@ -15,8 +14,8 @@ from qgis.core import QgsProcessingParameterNumber
 from qgis.core import QgsProcessingParameterFolderDestination
 from qgis.core import QgsProcessingParameterString
 from qgis.core import QgsProcessingParameterDefinition
-import processing
 from pathlib import Path
+import processing
 
 class CreateSamplingPlot(QgsProcessingAlgorithm):
     def initAlgorithm(self, config = None):
@@ -64,7 +63,8 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
         self.addParameter(param)
 
     def processAlgorithm(self, parameters, context, model_feedback):
-        # Use a multi-step feedback, so that individual child algorithm progress reports are adjusted for the
+        # Use a multi-step feedback, so that individual child algorithm 
+        # progress reports are adjusted for the
         # overall progress through the model
         feedback = QgsProcessingMultiStepFeedback(3, model_feedback)
         results = {}
