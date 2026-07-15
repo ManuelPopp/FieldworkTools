@@ -116,7 +116,7 @@ set "REPLACEMENT4=script_dir = \"%GITROOT_PY%/FieldworkTools/R\""
 echo Updating script_dir path inside all scripts...
 
 :: Update plotplanner.py
-powershell -Command "(Get-Content -Raw '%DEST_PLOTPLANNER%') -replace 'script_dir = \\\".*?\\\"', '%REPLACEMENT0%' | Set-Content -Encoding UTF8 '%DEST_PLOTPLANNER%'"
+powershell -Command "(Get-Content -Raw '%DEST_PLOTPLANNER%') -replace 'script_dir_default = \\\".*?\\\"', '%REPLACEMENT0%' | Set-Content -Encoding UTF8 '%DEST_PLOTPLANNER%'"
 
 IF %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to update plotplanner.py
@@ -126,7 +126,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 :: Update photoplanner.py
-powershell -Command "(Get-Content -Raw '%DEST_PHOTOPLANNER%') -replace 'script_dir = \\\".*?\\\"', '%REPLACEMENT1%' | Set-Content -Encoding UTF8 '%DEST_PHOTOPLANNER%'"
+powershell -Command "(Get-Content -Raw '%DEST_PHOTOPLANNER%') -replace 'script_dir_default = \\\".*?\\\"', '%REPLACEMENT1%' | Set-Content -Encoding UTF8 '%DEST_PHOTOPLANNER%'"
 
 IF %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to update photoplanner.py

@@ -11,7 +11,17 @@ import subprocess
 import os
 import sys
 
-script_dir = "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/photomission"
+script_dir_default = "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/photomission"
+# Try find script_dir
+try:
+    qgis_dir = Path(__file__).resolve().parent
+    candidate = qgis_dir.parent / "flightplanner"
+
+    if (candidate / script_name).exists():
+        script_dir = str(candidate)
+except Exception:
+    script_dir = script_dir_default
+
 script_path = os.path.join(script_dir, "photomission.py")
 
 class PhotoMissionAlgorithm(QgsProcessingAlgorithm):
