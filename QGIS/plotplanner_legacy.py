@@ -26,6 +26,7 @@ from qgis.core import (
 
 import subprocess
 
+script_dir_default = "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/flightplanner"
 script_name = "create_area_flight.py"
 defaultname = "SamplingPlot"
 
@@ -43,27 +44,31 @@ except Exception:
 
 # Fall back to QGIS settings
 if script_dir is None:
-    settings = QSettings()
-    script_dir = settings.value("FieldworkTools/script_dir", None)
+    try:
+        from PyQt6.QtWidgets import QFileDialog
+        settings = QSettings()
+        script_dir = settings.value("FieldworkTools/script_dir", None)
 
-    if (
-        script_dir is None
-        or not Path(script_dir, script_name).exists()
-    ):
-        script_dir = QFileDialog.getExistingDirectory(
-            None,
-            "Select the flightplanner directory"
-        )
-
-        if not Path(script_dir, script_name).exists():
-            raise Exception(
-                f"{script_name} not found in selected directory."
+        if (
+            script_dir is None
+            or not Path(script_dir, script_name).exists()
+        ):
+            script_dir = QFileDialog.getExistingDirectory(
+                None,
+                "Select the flightplanner directory"
             )
 
-        settings.setValue(
-            "FieldworkTools/script_dir",
-            script_dir
-        )
+            if not Path(script_dir, script_name).exists():
+                raise Exception(
+                    f"{script_name} not found in selected directory."
+                )
+
+            settings.setValue(
+                "FieldworkTools/script_dir",
+                script_dir
+            )
+    except:
+        script_dir_default
 
 print("Using flightplanner directory:", script_dir)
 
