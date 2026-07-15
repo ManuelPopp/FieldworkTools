@@ -107,8 +107,8 @@ echo [OK] fullsamplingsetup.py copied.
 set "GITROOT_PY=%GITROOT:\=/%"
 
 :: Define the PowerShell replacement command
-set "REPLACEMENT0=script_dir = \"%GITROOT_PY%/FieldworkTools/flightplanner\""
-set "REPLACEMENT1=script_dir = \"%GITROOT_PY%/FieldworkTools/photoplanner\""
+set "REPLACEMENT0=script_dir_default = \"%GITROOT_PY%/FieldworkTools/flightplanner\""
+set "REPLACEMENT1=script_dir_default = \"%GITROOT_PY%/FieldworkTools/photoplanner\""
 set "REPLACEMENT2=default_geoid = \"%GITROOT_PY%/FieldworkTools/data/egm96/us_nga_egm96_15.tif\""
 set "REPLACEMENT3=script_dir = \"%GITROOT_PY%/FieldworkTools/R\""
 set "REPLACEMENT4=script_dir = \"%GITROOT_PY%/FieldworkTools/R\""

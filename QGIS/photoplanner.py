@@ -10,6 +10,7 @@ from qgis.core import (
 import subprocess
 import os
 import sys
+from pathlib import Path
 
 script_dir_default = "D:/onedrive/OneDrive - Eidg. Forschungsanstalt WSL/switchdrive/PhD/git/FieldworkTools/photomission"
 # Try find script_dir
