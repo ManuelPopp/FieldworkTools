@@ -31,7 +31,9 @@ class Waypoint():
         self.perform_imu_calibration = False
         self.actions = [] if actions is None else actions
         self.mission = mission
-    
+        self.config = getattr(mission, "args", None) if mission is not None else \
+            globals().get("config", None)
+
     @property
     def index(self):
         if hasattr(self.mission, "waypoints"):
@@ -123,6 +125,7 @@ class Waypoint():
             raise TypeError(
                 f"Expected an ActionGroup subclass, got {t}"
             )
+        kwargs.setdefault("config", self.config)
         self.actions.append(action_group(waypoint = self, **kwargs))
     
     def add_calibration(self, hover = False):

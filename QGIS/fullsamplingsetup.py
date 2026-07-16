@@ -174,6 +174,48 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
         else:
             feedback.pushInfo("WARNING: No Mavic 3M KMZ file found.")
         
+
+        # Matrice 4T Flightplan
+        # Spacing at 85 m AGL DEM follow and 85 % side overlap is 15.5 m
+        alg_params = {
+            "ALTITUDE": 50 if parameters["dtm"] is None else 85,
+            "ALTTYPE": 0 if parameters["dtm"] is None else 1,  # AGL: RTF=0, DTM follow=1
+            "ANGLE": None,
+            "BUFFER": None,
+            "CALIBIMU": False,
+            "DTM": parameters["dtm"].source() if hasattr(
+                parameters["dtm"], "source"
+                ) else parameters["dtm"],
+            "FILENAME": f"{parameters['plot_name']}_M4T",
+            "FLAP": None,
+            "FLIGHTSPEED": None,
+            "GRIDMODE": 0,  # Lines
+            "GSD": None,
+            "HEIGHT": parameters["height"],
+            "IMUCALTIME": None,
+            "LATLON": parameters["centre_coordinate2"],
+            "LATLON2": parameters["angle_coordinate"],
+            "NSAMPLE": None,
+            "OUTPUT": parameters["OUTPUT"],
+            "SCANMODE": False,
+            "SETUP": 3,  # Matrice 4T
+            "SLAP": None,
+            "SPACING": None,
+            "TOSECUREALT": None,
+            "WIDTH": parameters["width"]
+        }
+        outputs["Matrice4TFlightplan"] = processing.run(
+            "script:create_plotplan",
+            alg_params,
+            context = context,
+            feedback = feedback,
+            is_child_algorithm = False
+            )
+        
+        # Remove and rename files
+        out_name = str(parameters["plot_name"])
+        out_dir = Path(parameters["OUTPUT"])
+        
         # Remove duplicate files from L2 output
         for f in out_dir.glob("*_L2.kml"):
             f.unlink()
@@ -184,8 +226,17 @@ class CreateSamplingPlot(QgsProcessingAlgorithm):
         for f in out_dir.glob("*_L2.gpx"):
             f.unlink()
         
+        for f in out_dir.glob("*_M4T.kml"):
+            f.unlink()
+        for f in out_dir.glob("*_M4T_boundary.gpkg"):
+            f.unlink()
+        for f in out_dir.glob("*_M4T_points.gpkg"):
+            f.unlink()
+        for f in out_dir.glob("*_M4T.gpx"):
+            f.unlink()
+        
         for report in out_dir.glob("*_report.txt"):
-            if "_L2" not in report.stem:
+            if "_L2" not in report.stem and "_M4T" not in report.stem:
                 report.rename(
                     report.with_name(
                         report.stem.replace("_report", "_M3M_report") + ".txt"

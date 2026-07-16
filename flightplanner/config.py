@@ -6,7 +6,20 @@ import numpy as np
 
 # Dataclasses-----------------------------------------------------------
 @dataclass
+class SupportedSensors:
+    all: list = field(default_factory = lambda: ["m3m", "m4t", "l2"])
+    mapping: list = field(default_factory = lambda: ["m3m", "m4t"])
+    lidar: list = field(default_factory = lambda: ["l2"])
+
+@dataclass
+class SupportedPlatforms:
+    all: list = field(default_factory = lambda: ["m3m", "m4t", "m350", "m400"])
+    mavic: list = field(default_factory = lambda: ["m3m"])
+    matrice: list = field(default_factory = lambda: ["m4t", "m350", "m400"])
+
+@dataclass
 class Config:
+    sensortypes: list = field(default_factory = list)
     gsd: float = 4.0
     sensorfactor: float = 21.6888427734375
     altitude: float = None
@@ -38,11 +51,11 @@ class Config:
 class Defaults(Config):
     sensor: str = "m3m"
     sensorchoices: list = field(
-        default_factory = lambda: ["m3m", "l2"]
+        default_factory = lambda: ["m3m", "m4t", "l2"]
         )
     platform: str = "m3m"
     platformchoices: list = field(
-        default_factory = lambda: ["m350", "m400"]
+        default_factory = lambda: ["m3m", "m4t", "m350", "m400"]
         )
     altitudetype: str = "rtf"
     template_directory: str = os.path.join(".", "templates")
@@ -58,9 +71,45 @@ class Defaults(Config):
 
 @dataclass
 class M3MConfig(Config):
-    droneid: int = 77
-    sensor: str = "m3m"
     platform: str = "m3m"
+    droneid: int = 77
+    dronesubid: int = 0
+    sensor: str = "m3m"
+    sensortypes: list = field(
+        default_factory = lambda: ["visible", "narrow_band"]
+        )
+    sensorfactor: float = 21.6888427734375
+    sideoverlap: float = 0.85
+    frontoverlap: float = 0.9
+    overlapsensor: str = "MS"
+    horizontalfov: float = 61.2
+    verticalfov: float = 48.1
+    secondary_hfov: float = 84.0
+    secondary_vfov: float = None  # Unknown value, set to None
+    coefficients_sol: list = field(
+        default_factory = lambda: [-0.0119347, 1.19347]
+        )
+    coefficients_atd: list = field(
+        default_factory = lambda: [
+            -0.00896313366070803, 0.8963133773348276
+            ]
+        )
+    flightspeed: float = 4.0
+    template_directory: str = os.path.join(".", "templates", "m3m")
+
+#TODO Adjust other drone classes to include the platform and sensor IDs and subIDs
+#TODO Include additional tags in templates, unify templates
+@dataclass
+class Matrice4TConfig(Config):
+    platform: str = "m4t"
+    droneid: int = 99
+    dronesubid: int = 1
+    payloadid: int = 89
+    payloadsubid: int = 2
+    payloadpositionidx: int = 0
+    sensor: str = "m4t"
+    sensortypes: list = field(default_factory = lambda: ["visible", "ir"])
+    altitude: float = 50.0
     sensorfactor: float = 21.6888427734375
     sideoverlap: float = 0.85
     frontoverlap: float = 0.9
@@ -82,8 +131,9 @@ class M3MConfig(Config):
 
 @dataclass
 class Matrice350Config(Config):
-    droneid: int = 89
     platform: str = "m350"
+    droneid: int = 89
+    dronesubid: int = 0
     altitude: float = 70.0
     altitudetype: str = ""
     sideoverlap: float = 0.8
@@ -91,8 +141,9 @@ class Matrice350Config(Config):
 
 @dataclass
 class Matrice400Config(Config):
-    droneid: int = 103
     platform: str = "m400"
+    droneid: int = 103
+    dronesubid: int = 0
     altitude: float = 70.0
     sideoverlap: float = 0.8
     frontoverlap: float = 0.75
@@ -100,6 +151,7 @@ class Matrice400Config(Config):
 @dataclass
 class L2M350Config(Matrice350Config):
     sensor: str = "l2"
+    sensortypes: list = field(default_factory = lambda: [])
     frontoverlap: float = 0.9
     horizontalfov: float = 70.0
     verticalfov: float = 75.0 # In non-repetitive mode
@@ -125,6 +177,7 @@ class L2M350Config(Matrice350Config):
 @dataclass
 class L2M400Config(Matrice400Config):
     sensor: str = "l2"
+    sensortypes: list = field(default_factory = lambda: [])
     frontoverlap: float = 0.9
     horizontalfov: float = 70.0
     verticalfov: float = 75.0 # In non-repetitive mode
@@ -170,6 +223,7 @@ class ParameterSet(argparse.Action):
         setattr(namespace, self.dest, values)
         config_map = {
             "m3m": M3MConfig(),
+            "m4t": Matrice4TConfig(),
             "l2": L2M400Config(),
             "m350l2": L2M350Config(),
             "m400l2": L2M400Config()

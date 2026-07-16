@@ -47,7 +47,9 @@ class ActionGroup():
     def __init__(
             self,
             waypoint = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None,
+            action_end_wp = None,
+            config = None
             ):
         self.waypoint = waypoint
         self._action_start_wp = action_start_wp
@@ -55,6 +57,9 @@ class ActionGroup():
         self.action_trigger = "reachPoint"
         self.action_trigger_param = None
         self.actions = []
+        self.config = config or getattr(
+            waypoint, "config", None
+            ) or globals()["config"]
     
     @property
     def action_start_wp(self):
@@ -104,10 +109,14 @@ class ActionGroup():
 class AircraftCalibrationGroup(ActionGroup):
     instances = []
     def __init__(
-            self, waypoint = None,
-            action_start_wp = None, action_end_wp = None, hover = False
+            self,
+            waypoint = None,
+            action_start_wp = None,
+            action_end_wp = None,
+            hover = False,
+            config = None
             ):
-        super().__init__(waypoint, action_start_wp, action_end_wp)
+        super().__init__(waypoint, action_start_wp, action_end_wp, config)
         self.__class__.instances.append(self)
         self.action_trigger = "reachPoint"
         self.actions = [
@@ -118,9 +127,11 @@ class PrepareTimelapseNadirMSMapping(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None,
+            action_end_wp = None,
+            config = None
             ):
-        super().__init__(waypoint, action_start_wp, action_end_wp)
+        super().__init__(waypoint, action_start_wp, action_end_wp, config)
         self.__class__.instances.append(self)
         self.action_trigger = "betweenAdjacentPoints"
         self.actions = [
@@ -129,16 +140,16 @@ class PrepareTimelapseNadirMSMapping(ActionGroup):
                 gimbalPitchRotateAngle = -90,
                 gimbalRotateTime = 10
                 ),
-            StartTimeLapse.new(self, "visible,narrow_band")
+            StartTimeLapse.new(self, ",".join(self.config.sensortypes))
         ]
 
 class StartNadirMSMapping(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None, action_trigger_param = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None, action_end_wp = None, config = None
             ):
-        super().__init__(waypoint, action_start_wp, action_end_wp)
+        super().__init__(waypoint, action_start_wp, action_end_wp, config)
         self.__class__.instances.append(self)
         self.action_trigger = "multipleDistance"
         self.action_trigger_param = action_trigger_param
@@ -148,20 +159,20 @@ class StartNadirMSMapping(ActionGroup):
                 gimbalPitchRotateAngle = -90,
                 gimbalRotateTime = 10
                 ),
-            StartContinuousShoot.new(self, "visible,narrow_band")
+            StartContinuousShoot.new(self, ",".join(self.config.sensortypes))
         ]
 
 class StopNadirMSMapping(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None, action_end_wp = None, config = None
             ):
-        super().__init__(waypoint, action_start_wp, action_end_wp)
+        super().__init__(waypoint, action_start_wp, action_end_wp, config)
         self.__class__.instances.append(self)
         self.action_trigger = "reachPoint"
         self.actions = [
-            StopContinuousShoot.new(self, "visible,narrow_band")
+            StopContinuousShoot.new(self, ",".join(self.config.sensortypes))
             ]
         self.link_to([StartNadirMSMapping])
 
@@ -169,12 +180,13 @@ class PrepareObliqueMSMapping(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None, action_end_wp = None, config = None
             ):
         super().__init__(
             waypoint,
             action_start_wp = action_start_wp or waypoint,
-            action_end_wp = action_end_wp or waypoint
+            action_end_wp = action_end_wp or waypoint,
+            config = config
             )
         self.__class__.instances.append(self)
         self.action_trigger = "reachPoint"
@@ -192,9 +204,9 @@ class StartObliqueMSMapping(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None, action_trigger_param = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None, action_end_wp = None, config = None
             ):
-        super().__init__(waypoint, action_start_wp, action_end_wp)
+        super().__init__(waypoint, action_start_wp, action_end_wp, config)
         self.__class__.instances.append(self)
         self.action_trigger = "multipleDistance"
         self.action_trigger_param = action_trigger_param
@@ -204,7 +216,7 @@ class StartObliqueMSMapping(ActionGroup):
                 gimbalPitchRotateAngle = -45,
                 gimbalRotateTime = 10
                 ),
-            StartContinuousShoot.new(self, "visible,narrow_band")
+            StartContinuousShoot.new(self, ",".join(self.config.sensortypes))
         ]
         self.link_to([StartNadirMSMapping])
 
@@ -212,13 +224,13 @@ class StopObliqueMSMapping(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None, action_end_wp = None, config = None
             ):
-        super().__init__(waypoint, action_start_wp, action_end_wp)
+        super().__init__(waypoint, action_start_wp, action_end_wp, config)
         self.__class__.instances.append(self)
         self.action_trigger = "reachPoint"
         self.actions = [
-            StopContinuousShoot.new(self, "visible,narrow_band")
+            StopContinuousShoot.new(self, ",".join(self.config.sensortypes))
         ]
         self.link_to([StartObliqueMSMapping])
 
@@ -226,9 +238,9 @@ class StartRecordPointCloud(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None, imu_calibration = False,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None, action_end_wp = None, config = None
             ):
-        super().__init__(waypoint, action_start_wp, action_end_wp)
+        super().__init__(waypoint, action_start_wp, action_end_wp, config)
         self.__class__.instances.append(self)
         self.action_trigger = "reachPoint"
         self.actions = [
@@ -241,9 +253,9 @@ class StartLiDARMapping(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None, action_trigger_param = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None, action_end_wp = None, config = None
             ):
-        super().__init__(waypoint, action_start_wp, action_end_wp)
+        super().__init__(waypoint, action_start_wp, action_end_wp, config)
         self.__class__.instances.append(self)
         self.action_trigger = "multipleDistance"
         self.action_trigger_param = action_trigger_param
@@ -260,9 +272,9 @@ class StopRecordPointCloud(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None, action_end_wp = None, config = None
             ):
-        super().__init__(waypoint, action_start_wp, action_end_wp)
+        super().__init__(waypoint, action_start_wp, action_end_wp, config)
         self.__class__.instances.append(self)
         self.action_trigger = "reachPoint"
         self.actions = [
@@ -275,12 +287,13 @@ class PrepareObliqueLiDARMapping(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None, action_end_wp = None, config = None
             ):
         super().__init__(
             waypoint,
             action_start_wp = action_start_wp or waypoint,
-            action_end_wp = action_end_wp or waypoint
+            action_end_wp = action_end_wp or waypoint,
+            config = config
             )
         self.__class__.instances.append(self)
         self.action_trigger = "reachPoint"
@@ -298,9 +311,9 @@ class StartObliqueLiDARMapping(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None, action_trigger_param = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None, action_end_wp = None, config = None
             ):
-        super().__init__(waypoint, action_start_wp, action_end_wp)
+        super().__init__(waypoint, action_start_wp, action_end_wp, config)
         self.__class__.instances.append(self)
         self.action_trigger = "multipleDistance"
         self.actions = [
@@ -317,9 +330,9 @@ class StopObliqueLiDARMapping(ActionGroup):
     instances = []
     def __init__(
             self, waypoint = None,
-            action_start_wp = None, action_end_wp = None
+            action_start_wp = None, action_end_wp = None, config = None
             ):
-        super().__init__(waypoint, action_start_wp, action_end_wp)
+        super().__init__(waypoint, action_start_wp, action_end_wp, config)
         self.__class__.instances.append(self)
         self.action_trigger = "reachPoint"
         self.actions = [

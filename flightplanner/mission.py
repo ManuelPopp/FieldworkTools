@@ -39,9 +39,10 @@ from lib.actiongroups import (
     StartObliqueLiDARMapping, StopObliqueLiDARMapping
     )
 
-from config import Config
+from config import Config, SupportedSensors
 
 config = Config()
+sensor_support = SupportedSensors()
 
 class Mission():
     def __init__(self, args):
@@ -222,7 +223,7 @@ class Mission():
                 "Check input geometry and parameters."
                 )
         # Add diagonal to centre for RGB/MS mapping
-        if self.args.sensor.lower() == "m3m":
+        if self.args.sensor.lower() in ["m3m", "m4t"]:
             last_point = Point(grid.iloc[-1,].x, grid.iloc[-1,].y)
             corner_idx = self.plot_gdf_buff.distance(last_point).idxmin()
             x, y = self.plot_gdf_buff.get_coordinates().iloc[corner_idx]
@@ -299,9 +300,9 @@ class Mission():
                 f" Found {len(self.waypoints)}."
                 )
         
-        if self.args.sensor == "m3m":
+        if self.args.sensor in sensor_support.mapping:
             self._default_ms_mapping()
-        elif self.args.sensor == "l2":
+        elif self.args.sensor in sensor_support.lidar:
             self._default_lidar_mapping()
 
     def _default_ms_mapping(self):

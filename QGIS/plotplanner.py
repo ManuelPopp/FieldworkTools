@@ -82,9 +82,10 @@ script_name2 = "create_sampling_plot.py"
 setup_options = [
     "Mavic M3M",
     "Matrice 400 + Zenmuse L2",
-    "Matrice 350 + Zenmuse L2"
+    "Matrice 350 + Zenmuse L2",
+    "Matrice 4T"
     ]
-setup_options_short = ["m3m", ["m400", "l2"], ["m350", "l2"]]
+setup_options_short = ["m3m", ["m400", "l2"], ["m350", "l2"], "m4t"]
 
 altitude_options = [
     "AGL: Real time terrain follow",
