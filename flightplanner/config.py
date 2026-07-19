@@ -111,7 +111,7 @@ class Matrice4TConfig(Config):
     sensortypes: list = field(default_factory = lambda: ["visible", "ir"])
     altitude: float = 50.0
     sensorfactor: float = 21.6888427734375
-    sideoverlap: float = 0.85
+    sideoverlap: float = 0.8
     frontoverlap: float = 0.9
     overlapsensor: str = "MS"
     horizontalfov: float = 61.2
