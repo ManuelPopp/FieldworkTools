@@ -69,6 +69,11 @@ for src_file in src_files:
         os.path.basename(src_file).replace(".JPG", ".tif")
     )
     tif_file_norm = os.path.normpath(tif_file).replace("\\", "/")
+
+    if os.path.exists(tif_file):
+        print(f"{tif_file} already exists. Skipping.")
+        continue
+    
     print(
         " ".join([
             os.path.join(dji_sdk_dir_norm, "dji_irp" + fext),
