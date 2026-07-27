@@ -40,9 +40,13 @@ if not os.path.exists(prj_tif):
     os.makedirs(prj_tif)
 
 # Process images
+print(f"DJI SDK in {dji_sdk_dir}.")
+
 src_files = glob.glob(os.path.join(args.src_directory, "*T.JPG"))
+print(f"Found {len(src_files)} thermal images in {args.src_directory}.")
 
 for src_file in src_files:
+    print(f"Processing {src_file}...")
     raw_file = os.path.join(
         prj_raw,
         os.path.basename(src_file).replace(".JPG", ".raw")
@@ -79,8 +83,10 @@ for src_file in src_files:
     )
     del img
     del tif_arr
+    print(f"Saved {tif_file}.")
 
 # Run ODM
+print("Running OpenDroneMap...")
 subprocess.run([
     "docker", "run", "-ti", "--rm",
     "-v", f"{os.path.abspath(args.prj_directory)}:/datasets",
