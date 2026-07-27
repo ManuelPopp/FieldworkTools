@@ -17,7 +17,7 @@ fext = ".exe" if os.name in ["windows", "nt"] else ""
 dji_sdk_dir = os.path.join(
     os.path.dirname(__file__), "utility", "bin", osname, architecture
     )
-dji_sdk_dir_norm = os.path.normpath(dji_sdk_dir).replace("\\", "/")
+dji_sdk_dir_norm = os.path.normpath(dji_sdk_dir)
 
 # Get input arguments
 parser = argparse.ArgumentParser(
@@ -71,13 +71,12 @@ for src_file in src_files:
         )
     subprocess.run(
         [
-            "./dji_irp" + fext,
+            os.path.join(dji_sdk_dir_norm, "dji_irp" + fext),
             "-s", src_file_norm,
             "-a", "measure",
             "-o", raw_file_norm,
             "--measuremefmt", "float32"
             ],
-        cwd = dji_sdk_dir_norm,
         check = True
         )
     img = Image.open(src_file)
