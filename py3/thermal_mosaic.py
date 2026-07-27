@@ -7,8 +7,8 @@ import subprocess
 from PIL import Image
 
 # Settings
-osname = "windows" if os.name == "nt" else "linux"
-fext = ".exe" if os.name == "nt" else ""
+osname = "windows" if os.name in ["windows", "nt"] else "linux"
+fext = ".exe" if os.name in ["windows", "nt"] else ""
 
 dji_sdk_dir = os.path.join(
     os.path.dirname(__file__), "utility", "bin", osname, "release_x68"
