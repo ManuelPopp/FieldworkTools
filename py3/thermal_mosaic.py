@@ -66,7 +66,7 @@ for src_file in src_files:
     print(
         " ".join([
             "./dji_irp" + fext, "-s", src_file_norm, "-a", "measure",
-            "-o", raw_file_norm, "--measuremefmt", "float32"
+            "-o", raw_file_norm, "--measurefmt", "float32"
             ])
         )
     subprocess.run(
