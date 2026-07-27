@@ -36,8 +36,13 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Create directories
+prj_main = os.path.abspath(os.path.dirname(args.prj_directory))
+prj_main_norm = os.path.normpath(prj_main).replace("\\", "/")
 prj_raw = os.path.join(args.prj_directory, "raw")
 prj_tif = os.path.join(args.prj_directory, "images")
+
+if not os.path.exists(prj_main):
+    os.makedirs(prj_main)
 
 if not os.path.exists(prj_raw):
     os.makedirs(prj_raw)
@@ -110,7 +115,7 @@ for src_file in src_files:
 print("Running OpenDroneMap...")
 subprocess.run([
     "docker", "run", "-ti", "--rm",
-    "-v", f"{os.path.abspath(args.prj_directory)}:/datasets",
+    "-v", f"{prj_main_norm}:/datasets",
     "opendronemap/odm",
     "--project-path", "/datasets", "project"
 ])
