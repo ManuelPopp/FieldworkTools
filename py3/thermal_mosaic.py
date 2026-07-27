@@ -17,7 +17,7 @@ fext = ".exe" if os.name in ["windows", "nt"] else ""
 dji_sdk_dir = os.path.join(
     os.path.dirname(__file__), "utility", "bin", osname, architecture
     )
-dji_sdk_dir_norm = os.path.normpath(dji_sdk_dir)
+dji_sdk_dir_norm = os.path.normpath(dji_sdk_dir).replace("\\", "/")
 
 # Get input arguments
 parser = argparse.ArgumentParser(
@@ -65,7 +65,8 @@ for src_file in src_files:
     tif_file_norm = os.path.normpath(tif_file).replace("\\", "/")
     print(
         " ".join([
-            "./dji_irp" + fext, "-s", src_file_norm, "-a", "measure",
+            os.path.join(dji_sdk_dir_norm, "dji_irp" + fext),
+            "-s", src_file_norm, "-a", "measure",
             "-o", raw_file_norm, "--measurefmt", "float32"
             ])
         )
@@ -75,7 +76,7 @@ for src_file in src_files:
             "-s", src_file_norm,
             "-a", "measure",
             "-o", raw_file_norm,
-            "--measuremefmt", "float32"
+            "--measurefmt", "float32"
             ],
         check = True
         )
