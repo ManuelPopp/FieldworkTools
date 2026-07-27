@@ -56,6 +56,7 @@ print(f"DJI SDK in {dji_sdk_dir_norm}.")
 src_files = glob.glob(os.path.join(args.src_directory, "*T.JPG"))
 print(f"Found {len(src_files)} thermal images in {args.src_directory}.")
 
+# Process JPEG files
 for src_file in src_files:
     src_file_norm = os.path.normpath(src_file).replace("\\", "/")
     print(f"Processing {src_file_norm}.")
@@ -64,16 +65,11 @@ for src_file in src_files:
         os.path.basename(src_file).replace(".JPG", ".raw")
     )
     raw_file_norm = os.path.normpath(raw_file).replace("\\", "/")
-    tif_file = os.path.join(
-        prj_tif,
-        os.path.basename(src_file).replace(".JPG", ".tif")
-    )
-    tif_file_norm = os.path.normpath(tif_file).replace("\\", "/")
 
-    if os.path.exists(tif_file):
-        print(f"{tif_file} already exists. Skipping.")
+    if os.path.exists(raw_file):
+        print(f"{raw_file} already exists. Skipping.")
         continue
-    
+
     print(
         " ".join([
             os.path.join(dji_sdk_dir_norm, "dji_irp" + fext),
@@ -91,6 +87,48 @@ for src_file in src_files:
             ],
         check = True
         )
+    print(f"Saved {raw_file}.")
+
+# Check scaling values
+global_min = numpy.inf
+global_max = -numpy.inf
+
+for src_file in src_files:
+    src_file_norm = os.path.normpath(src_file).replace("\\", "/")
+    raw_file = os.path.join(
+        prj_raw,
+        os.path.basename(src_file).replace(".JPG", ".raw")
+    )
+    raw_arr = numpy.fromfile(
+            os.path.join(prj_raw, raw_file_norm),
+            dtype = numpy.float32
+        )
+    global_min = min(global_min, numpy.nanmin(raw_arr))
+    global_max = max(global_max, numpy.nanmax(raw_arr))
+
+with open(os.path.join(prj_main, "scaling.txt"), "w") as f:
+    f.write(f"min: {global_min}\n")
+    f.write(f"max: {global_max}\n")
+
+# Process .raw files
+for src_file in src_files:
+    src_file_norm = os.path.normpath(src_file).replace("\\", "/")
+    print(f"Processing {src_file_norm}.")
+    raw_file = os.path.join(
+        prj_raw,
+        os.path.basename(src_file).replace(".JPG", ".raw")
+    )
+    raw_file_norm = os.path.normpath(raw_file).replace("\\", "/")
+    tif_file = os.path.join(
+        prj_tif,
+        os.path.basename(src_file).replace(".JPG", ".tif")
+    )
+    tif_file_norm = os.path.normpath(tif_file).replace("\\", "/")
+
+    if os.path.exists(tif_file):
+        print(f"{tif_file} already exists. Skipping.")
+        continue
+
     img = Image.open(src_file)
     width = img.width
     height = img.height
@@ -100,7 +138,8 @@ for src_file in src_files:
     )
     scaling = 2 * raw_arr.shape[0] / (width * height)
     tif_arr = raw_arr.reshape((int(height * scaling), int(width * scaling)))
-    tifffile.imwrite(tif_file_norm, tif_arr.astype(numpy.float32))
+    tif_arr_scaled = (tif_arr - global_min) / (global_max - global_min)
+    tifffile.imwrite(tif_file_norm, tif_arr_scaled.astype(numpy.float32))
     subprocess.run(
         [
             "exiftool",
