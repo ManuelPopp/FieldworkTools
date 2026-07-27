@@ -2,16 +2,20 @@ import os
 import sys
 import glob
 import numpy
+import platform
 import argparse
 import subprocess
 from PIL import Image
 
 # Settings
+architecture = "release_x64" if platform.architecture()[0] == "64bit" \
+    else "release_x86"
+
 osname = "windows" if os.name in ["windows", "nt"] else "linux"
 fext = ".exe" if os.name in ["windows", "nt"] else ""
 
 dji_sdk_dir = os.path.join(
-    os.path.dirname(__file__), "utility", "bin", osname, "release_x68"
+    os.path.dirname(__file__), "utility", "bin", osname, architecture
     )
 
 # Get input arguments
@@ -46,8 +50,8 @@ src_files = glob.glob(os.path.join(args.src_directory, "*T.JPG"))
 print(f"Found {len(src_files)} thermal images in {args.src_directory}.")
 
 for src_file in src_files:
-    print(f"Processing {src_file}...")
     src_file_norm = os.path.normpath(src_file).replace("\\", "/")
+    print(f"Processing {src_file_norm}.")
     raw_file = os.path.join(
         prj_raw,
         os.path.basename(src_file).replace(".JPG", ".raw")
