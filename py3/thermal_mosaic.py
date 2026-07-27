@@ -5,6 +5,7 @@ import numpy
 import platform
 import argparse
 import subprocess
+import tifffile
 from PIL import Image
 
 # Settings
@@ -89,12 +90,18 @@ for src_file in src_files:
     )
     scaling = 2 * raw_arr.shape[0] / (width * height)
     tif_arr = raw_arr.reshape((int(height * scaling), int(width * scaling)))
-    exf = img.getexif()
-    tif_arr.save(
-        tif_file_norm,
-        format = "TIFF",
-        exif = exf
-    )
+    tifffile.imwrite(tif_file_norm, tif_arr.astype(numpy.float32))
+    subprocess.run(
+        [
+            "exiftool",
+            "-TagsFromFile", src_file_norm,
+            "-EXIF:all",
+            "-XMP:all",
+            "-GPS:all",
+            "-overwrite_original", tif_file_norm
+            ],
+        check = True
+        )
     del img
     del tif_arr
     print(f"Saved {tif_file}.")
