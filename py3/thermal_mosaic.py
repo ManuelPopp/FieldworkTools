@@ -47,20 +47,23 @@ print(f"Found {len(src_files)} thermal images in {args.src_directory}.")
 
 for src_file in src_files:
     print(f"Processing {src_file}...")
+    src_file_norm = os.path.normpath(src_file).replace("\\", "/")
     raw_file = os.path.join(
         prj_raw,
         os.path.basename(src_file).replace(".JPG", ".raw")
     )
+    raw_file_norm = os.path.normpath(raw_file).replace("\\", "/")
     tif_file = os.path.join(
         prj_tif,
         os.path.basename(src_file).replace(".JPG", ".tif")
     )
+    tif_file_norm = os.path.normpath(tif_file).replace("\\", "/")
     subprocess.run(
         [
-            "dji_irp" + fext,
-            "-s", src_file,
+            "./dji_irp" + fext,
+            "-s", src_file_norm,
             "-a", "measure",
-            "-o", raw_file,
+            "-o", raw_file_norm,
             "--measuremefmt", "float32"
             ],
         cwd = dji_sdk_dir,
@@ -70,14 +73,14 @@ for src_file in src_files:
     width = img.width
     height = img.height
     raw_arr = numpy.fromfile(
-        os.path.join(prj_raw, raw_file),
+        os.path.join(prj_raw, raw_file_norm),
         dtype = numpy.float32
     )
     scaling = 2 * raw_arr.shape[0] / (width * height)
     tif_arr = raw_arr.reshape((int(height * scaling), int(width * scaling)))
     exf = img.getexif()
     tif_arr.save(
-        tif_file,
+        tif_file_norm,
         format = "TIFF",
         exif = exf
     )
