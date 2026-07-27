@@ -45,7 +45,7 @@ if not os.path.exists(prj_tif):
     os.makedirs(prj_tif)
 
 # Process images
-print(f"DJI SDK in {dji_sdk_dir}.")
+print(f"DJI SDK in {dji_sdk_dir_norm}.")
 
 src_files = glob.glob(os.path.join(args.src_directory, "*T.JPG"))
 print(f"Found {len(src_files)} thermal images in {args.src_directory}.")
@@ -63,6 +63,12 @@ for src_file in src_files:
         os.path.basename(src_file).replace(".JPG", ".tif")
     )
     tif_file_norm = os.path.normpath(tif_file).replace("\\", "/")
+    print(
+        " ".join([
+            "./dji_irp" + fext, "-s", src_file_norm, "-a", "measure",
+            "-o", raw_file_norm, "--measuremefmt", "float32"
+            ])
+        )
     subprocess.run(
         [
             "./dji_irp" + fext,
