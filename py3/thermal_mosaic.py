@@ -6,6 +6,7 @@ import platform
 import argparse
 import subprocess
 import tifffile
+import rasterio as rio
 from PIL import Image
 
 # Settings
@@ -40,6 +41,14 @@ prj_main = os.path.abspath(os.path.dirname(args.prj_directory))
 prj_main_norm = os.path.normpath(prj_main).replace("\\", "/")
 prj_raw = os.path.join(args.prj_directory, "raw")
 prj_tif = os.path.join(args.prj_directory, "images")
+
+orthomosaic_file = os.path.join(
+    args.prj_directory, "odm_orthophoto", "odm_orthphoto.tif"
+    )
+
+orthomosaic_scaled_file = os.path.join(
+    prj_main, "thermal_mosaic.tif"
+    )
 
 if not os.path.exists(prj_main):
     os.makedirs(prj_main)
@@ -156,14 +165,32 @@ for src_file in src_files:
     print(f"Saved {tif_file}.")
 
 # Run ODM
-print("Running OpenDroneMap...")
-subprocess.run([
-    "docker", "run", "-ti", "--rm",
-    "-v", f"{prj_main_norm}:/datasets",
-    "opendronemap/odm",
-    "--project-path", "/datasets", "project"
-])
+if not os.path.exists(orthomosaic_file):
+    print("Running OpenDroneMap...")
+    subprocess.run([
+        "docker", "run", "-ti", "--rm",
+        "-v", f"{prj_main_norm}:/datasets",
+        "opendronemap/odm",
+        "--project-path", "/datasets", "project"
+    ])
+    print("Thermal orthomosaic creation complete.")
+else:
+    print(f"{orthomosaic_file} already exists. Skipping ODM.")
 
-# End
-print("Thermal orthomosaic creation complete.")
-sys.sleep(5)
+# Re-scale the orthomosaic to the original temperature range
+if os.path.exists(orthomosaic_file) and not os.path.exists(
+    orthomosaic_scaled_file
+    ):
+    print("Re-scaling the orthomosaic to the original temperature range...")
+    with rio.open(orthomosaic_file, "r+") as src:
+        arr = src.read(1)
+        arr_scaled = arr * (global_max - global_min) + global_min
+
+        profile = src.profile
+        profile.update(
+            dtype = rio.float32,
+            count = 1
+        )
+
+    with rio.open(orthomosaic_scaled_file, "w", **profile) as dst:
+        dst.write(arr_scaled.astype(rio.float32), 1)
