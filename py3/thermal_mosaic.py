@@ -42,13 +42,13 @@ prj_main_norm = os.path.normpath(prj_main).replace("\\", "/")
 prj_raw = os.path.join(args.prj_directory, "raw")
 prj_tif = os.path.join(args.prj_directory, "images")
 
-orthomosaic_file = os.path.join(
-    args.prj_directory, "odm_orthophoto", "odm_orthphoto.tif"
-    )
+orthomosaic_file = os.path.normpath(
+    os.path.join(args.prj_directory, "odm_orthophoto", "odm_orthphoto.tif")
+    ).replace("\\", "/")
 
-orthomosaic_scaled_file = os.path.join(
-    prj_main, "thermal_mosaic.tif"
-    )
+orthomosaic_scaled_file = os.path.normpath(
+    os.path.join(prj_main, "thermal_mosaic.tif")
+    ).replace("\\", "/")
 
 if not os.path.exists(prj_main):
     os.makedirs(prj_main)
