@@ -43,7 +43,7 @@ prj_raw = os.path.join(args.prj_directory, "raw")
 prj_tif = os.path.join(args.prj_directory, "images")
 
 orthomosaic_file = os.path.normpath(
-    os.path.join(args.prj_directory, "odm_orthophoto", "odm_orthphoto.tif")
+    os.path.join(args.prj_directory, "odm_orthophoto", "odm_orthophoto.tif")
     ).replace("\\", "/")
 
 orthomosaic_scaled_file = os.path.normpath(
