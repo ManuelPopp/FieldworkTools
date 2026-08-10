@@ -165,7 +165,7 @@ for src_file in src_files:
     print(f"Saved {tif_file}.")
 
 # Run ODM
-if not os.path.exists(orthomosaic_file):
+if not os.path.isfile(orthomosaic_file):
     print("Running OpenDroneMap...")
     subprocess.run([
         "docker", "run", "-ti", "--rm",
@@ -178,7 +178,7 @@ else:
     print(f"{orthomosaic_file} already exists. Skipping ODM.")
 
 # Re-scale the orthomosaic to the original temperature range
-if os.path.exists(orthomosaic_file) and not os.path.exists(
+if os.path.isfile(orthomosaic_file) and not os.path.isfile(
     orthomosaic_scaled_file
     ):
     print("Re-scaling the orthomosaic to the original temperature range...")
@@ -194,3 +194,7 @@ if os.path.exists(orthomosaic_file) and not os.path.exists(
 
     with rio.open(orthomosaic_scaled_file, "w", **profile) as dst:
         dst.write(arr_scaled.astype(rio.float32), 1)
+elif os.path.isfile(orthomosaic_scaled_file):
+    print(f"{orthomosaic_scaled_file} already exists. Skipping re-scaling.")
+else:
+    print(f"{orthomosaic_file} does not exist. Cannot re-scale.")
