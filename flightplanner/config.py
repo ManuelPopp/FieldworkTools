@@ -108,7 +108,7 @@ class Matrice4TConfig(Config):
     payloadsubid: int = 2
     payloadpositionidx: int = 0
     sensor: str = "m4t"
-    sensortypes: list = field(default_factory = lambda: ["visible", "ir"])
+    sensortypes: list = field(default_factory = lambda: ["visable", "ir"])
     altitude: float = 50.0
     sensorfactor: float = 21.6888427734375
     sideoverlap: float = 0.8

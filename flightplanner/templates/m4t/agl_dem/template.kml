@@ -12,12 +12,12 @@
       <wpml:globalTransitionalSpeed>{TRANSITIONSPEED}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
         <wpml:droneEnumValue>{DRONE_ENUM_VALUE}</wpml:droneEnumValue>
-        <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
+        <wpml:droneSubEnumValue>1</wpml:droneSubEnumValue>
       </wpml:droneInfo>
       <wpml:waylineAvoidLimitAreaMode>1</wpml:waylineAvoidLimitAreaMode>
       <wpml:payloadInfo>
-        <wpml:payloadEnumValue>68</wpml:payloadEnumValue>
-        <wpml:payloadSubEnumValue>3</wpml:payloadSubEnumValue>
+        <wpml:payloadEnumValue>89</wpml:payloadEnumValue>
+        <wpml:payloadSubEnumValue>2</wpml:payloadSubEnumValue>
         <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
       </wpml:payloadInfo>
     </wpml:missionConfig>

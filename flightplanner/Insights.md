@@ -9,3 +9,6 @@ The default DEM the DJI Pilot 2 app uses is the ASTER GDEM V3. However, a compar
 When relying on DTM-based altitudes, check before each flight:
  - Does the UAV altitude before take-off matches the expected elevation based on the DTM?
  - Do the altitudes shown in the flightplanner plot seem reasonable, given the local terrain? Are artefacts visible in the DTM?
+
+ ## DJI Cloud API
+ Note: There is a typo in the DJI payloadLensIndex options where the developers used "visable" instead of "visible". For the M4T, we have to stick to using "visable" until they fixed the error.
